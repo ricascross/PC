@@ -1,9 +1,13 @@
 -module(chat).
--import(manager, [starter/0, login/2]).
 -export([start/1, stop/1]).
 
-start(Port) -> spawn(fun() -> server(Port) end).
+start(Port) ->
+   Pid = spawn(fun() -> server(Port) end),
+   io:format("Pid: ~p~n", [Pid]),
+   manager:start().
+
 stop(Server) -> Server ! stop.
+loop(Maps) -> io:format("entrou~n").
 
 room(Pids) ->
    receive
@@ -15,8 +19,8 @@ room(Pids) ->
          Info = string:split(Data, ",",all),
          io:format("received: ~s~n",[Info]),
          
-         case lists:nth(1,Info) of 
-               <<"login">> -> io:format("Entrou no login ~n");
+         case lists:nth(1,Info) of
+               <<"login">> -> manager:login(lists:nth(2,Info), lists:nth(3,Info));
                <<"logout">> -> io:format("Entrou no logout ~n")
          end,
          

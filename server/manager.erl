@@ -1,7 +1,7 @@
 -module(manager).
--export([starter/0, create_account/2, close_account/2, login/2, logout/1, online/0, stop/0]).
+-export([start/0, create_account/2, close_account/2, login/2, logout/1, online/0, stop/0]).
 
-starter() -> 
+start() ->
     register(?MODULE, spawn(fun() -> loop(dict:new())  end)).
 
 call(Request) ->
@@ -46,6 +46,7 @@ loop(Map) ->
             end;
 
         {{login, User, Pass}, From} ->
+            io:format("Entrou~n"),
             case dict: find(User, Map) of 
                 {ok, {Pass, _}} ->
                     From ! {ok, ?MODULE},
