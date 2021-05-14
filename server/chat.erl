@@ -2,12 +2,14 @@
 -export([start/1, stop/1]).
 
 start(Port) ->
-   Pid = spawn(fun() -> server(Port) end),
-   io:format("Pid: ~p~n", [Pid]),
-   manager:start().
+   login_manager:start(),
+   spawn(fun() -> server(Port) end).
 
-stop(Server) -> Server ! stop.
-loop(Maps) -> io:format("entrou~n").
+
+stop(Server) ->
+   login_manager:stop(),
+   Server ! stop.
+
 
 room(Pids) ->
    receive
@@ -15,13 +17,13 @@ room(Pids) ->
          io:format("user_entered\n",[]),
          room([Pid | Pids]);
 
-      {line, Data} = Msg -> 
-         Info = string:split(Data, ",",all),
-         io:format("received: ~s~n",[Info]),
+      {line, Data} = Msg ->
+         Info = string:split(Data,",",all),
+         io:format("received: ~s",[Info]),
          
-         case lists:nth(1,Info) of
-               <<"login">> -> manager:login(lists:nth(2,Info), lists:nth(3,Info));
-               <<"logout">> -> io:format("Entrou no logout ~n")
+         case Info of
+            [<<"login">>, User, Pass] -> login_manager:login(User, Pass);
+            <<"logout">> -> io:format("Entrou no logout ~n")
          end,
          
          [Pid ! Msg || Pid <- Pids],
@@ -41,7 +43,7 @@ user(Sock, Room) ->
          user(Sock, Room);
       {tcp_closed, _} ->
          Room ! {leave, self()};
-      {tcp_erro, _, _} ->
+      {tcp_error, _, _} ->
          Room ! {leave, self()}
    end.
 
