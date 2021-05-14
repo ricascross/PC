@@ -1,14 +1,14 @@
 -module(chat).
--export([start/1, stop/1]).
+-export([start/1, stop/0]).
 
 start(Port) ->
-   login_manager:start(),
-   spawn(fun() -> server(Port) end).
+   register(?MODULE, spawn(fun() -> server(Port) end)),
+   login_manager:start().
 
 
-stop(Server) ->
+stop() ->
    login_manager:stop(),
-   Server ! stop.
+   self() ! stop.
 
 
 room(Pids) ->
@@ -22,15 +22,22 @@ room(Pids) ->
          io:format("received: ~s",[Info]),
          
          case Info of
-            [<<"login">>, User, Pass] -> login_manager:login(User, Pass);
-            <<"logout">> -> io:format("Entrou no logout ~n")
+            [<<"login">>, User, Pass] -> self() ! login_manager:login(User, Pass,self());
+            [<<"logout">>, User] -> io:format("Entrou no logout ~n");
+            [<<"online\r\n">>] -> self() ! {lista , Pids}
          end,
          
          [Pid ! Msg || Pid <- Pids],
          room(Pids);
+
       {leave, Pid} ->
          io:format("user_left~n", []),
-         room(Pids -- [Pid])
+         room(Pids -- [Pid]);
+      {lista, Info} ->
+         io:format("received: ~s",[Info]);
+
+      invalid ->
+         io:format("Login invalido~n")
    end.
 
 user(Sock, Room) ->
