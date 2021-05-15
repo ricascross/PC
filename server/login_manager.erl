@@ -1,5 +1,5 @@
 -module(login_manager).
--export([start/0, create_account/3, close_account/3, login/3, logout/2, online/0, stop/0]).
+-export([start/0, create_account/2, close_account/2, login/2, logout/1, online/0, stop/0]).
 
 start() ->
     register(?MODULE, spawn(fun() -> loop(dict:new())  end)).
@@ -8,22 +8,23 @@ call(Request) ->
     ?MODULE ! {Request, self()},
     receive {Res, ?MODULE} -> Res end.
 
-create_account(User, Pass,Pid) -> call({create_account, User, Pass,Pid}).
-close_account(User, Pass,Pid) -> call({close_account, User, Pass,Pid}).
-login(User, Pass,Pid) -> call({login, User, Pass,Pid}).
-logout(User,Pid) -> call({logout, User,Pid}).
+create_account(User, Pass) -> call({create_account, User, Pass}).
+close_account(User, Pass) -> call({close_account, User, Pass}).
+login(User, Pass) -> call({login, User, Pass}).
+logout(User) -> call({logout, User}).
 online() -> call(online).
 stop() -> call(stop).
 
 loop(Map) ->
     receive
     %From é o pid de quem enviou o pedido
-        {{create_account, User, Pass,Pid}, From} ->
+
+        {{create_account, User, Pass}, From} ->
             % verificar se este pid já está no dicionário ou não
             case dict:find(User, Map) of
                 error ->
                     % enviar a mensagem a quem fez o pedido(FROm)
-                    From ! {ok, ?MODULE},
+                    From ! {account_created, ?MODULE},
                     % criar a conta, adicionando ao dict o username e um tuplo passwd e logged in
                     loop(dict:store(User, {Pass, false}, Map));
 
@@ -33,11 +34,11 @@ loop(Map) ->
                     loop(Map)
             end;
 
-        {{close_account, User, Pass,Pid}, From} ->
+        {{close_account, User, Pass}, From} ->
             case dict:find(User, Map) of
                 % usa o pattern matching se a Pass no argumento for igual ao que está no dict, senão dá erro
                 {ok, {Pass, _}} ->
-                    From ! {ok, ?MODULE},
+                    From ! {account_closed, ?MODULE},
                     loop(dict:erase(User, Map));
 
                 _ ->
@@ -45,33 +46,33 @@ loop(Map) ->
                     loop(Map)
             end;
 
-        {{login, User, Pass,Pid}, From} ->
-            io:format("Entrou~n"),
+        {{login, User, Pass}, From} ->
             case dict: find(User, Map) of
                 {ok, {Pass, _}} ->
-                    From ! {ok, ?MODULE};
-                    %loop(dict:store(User, {Pass, true}, Map));
+                    From ! {login_done, ?MODULE},
+                    loop(dict:store(User, {Pass, true}, Map));
                 _ ->
-                    From ! {invalid, ?MODULE}
-                    %loop(Map)
+                    From ! {login_invalid, ?MODULE},
+                    loop(Map)
             end;
 
-        {{logout, User, Pass,Pid}, From} ->
+        {{logout, User}, From} ->
             case dict: find(User, Map) of
                 {ok, {Pass, _}} ->
-                    From ! {ok, ?MODULE},
+                    From ! {logout_done, ?MODULE},
                     loop(dict:store(User, {Pass, false}, Map));
                 _ ->
-                    From ! {invalid, ?MODULE},
+                    From ! {logout_invalid, ?MODULE},
                     loop(Map)
             end;
 
         {online, From} ->
-            From ! {[User || {User, {_, true}} <- dict:to_list(Map)],?MODULE},
+            User_list = [User || {User, {_, true}} <- dict:to_list(Map)],
+            From ! {{online, User_list},?MODULE},
             loop(Map);
 
         {stop, From} ->
-            From ! {ok, ?MODULE}
+            From ! {stopped, ?MODULE}
 
     end.
 
