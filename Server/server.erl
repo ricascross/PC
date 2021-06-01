@@ -1,4 +1,4 @@
--module(chat).
+-module(server).
 -export([start/0,start/1, stop/0]).
 
 start() -> start(1234).
@@ -50,6 +50,7 @@ room(Pids) ->
       user_not_exists -> io:format("User not exists~n");
 
       login_done -> io:format("Login done~n");
+      already_logged_in -> io:format("Already logged in~n");
       login_invalid -> io:format("Login invalid~n");
 
       logout_done -> io:format("Logout done~n");
