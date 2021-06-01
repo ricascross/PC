@@ -158,7 +158,7 @@ sendPlayerInfo(Sock, [H|T]) ->
   {ok, Radius} = maps:find(radius, H),
   {ok, Score} = maps:find(score, H),
   {ok, Speed} = maps:find(speedBonus, H),
-  gen_tcp:send(Sock, io_lib:format("P:~s:~w:~w:~w:~w:~w~n", [Username, X, Y, Radius, Score, Speed])),
+  gen_tcp:send(Sock, io_lib:format("P,~s,~w,~w,~w,~w,~w~n", [Username, X, Y, Radius, Score, Speed])),
   sendPlayerInfo(Sock, T).
 
 sendBlobsInfo(Sock, MatchInfo) ->
@@ -176,14 +176,14 @@ sendBlobInfo(Sock, [{Idx, Blob}|T], _) ->
   {ok, X} = maps:find(x, Blob),
   {ok, Y} = maps:find(y, Blob),
   {ok, Radius} = maps:find(radius, Blob),
-  gen_tcp:send(Sock, io_lib:format("B:~w:~w:~w:~w:~w~n", [Idx, Type, X, Y, Radius])),
+  gen_tcp:send(Sock, io_lib:format("B,~w,~w,~w,~w,~w~n", [Idx, Type, X, Y, Radius])),
   sendBlobInfo(Sock, T, ok);
 sendBlobInfo(Sock, [H|T], Idx) ->
   {ok, Type} = maps:find(type, H),
   {ok, X} = maps:find(x, H),
   {ok, Y} = maps:find(y, H),
   {ok, Radius} = maps:find(radius, H),
-  gen_tcp:send(Sock, io_lib:format("B:~w:~w:~w:~w:~w~n", [Idx, Type, X, Y, Radius])),
+  gen_tcp:send(Sock, io_lib:format("B,~w,~w,~w,~w,~w~n", [Idx, Type, X, Y, Radius])),
   sendBlobInfo(Sock, T, Idx+1).
 
 sendScores(Sock, MatchInfo) ->
