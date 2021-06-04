@@ -1,12 +1,12 @@
 -module(login_manager).
--export([start/0, create_account/2, close_account/2, login/2, logout/1, online/0, stop/0]).
+-export([start_login/0, create_account/2, close_account/2, login/2, logout/1, online/0, stop/0]).
 
-start() ->
-    register(?MODULE, spawn(fun() -> loop(maps:new())  end)).
+start_login() ->
+    spawn(fun() -> loop(maps:new())  end).
 
 call(Request) ->
-    ?MODULE ! {Request, self()},
-    receive {Res, ?MODULE} -> Res end.
+    login_manager ! {Request, self()},
+    receive {Res, login_manager} -> Res end.
 
 create_account(User, Pass) -> call({create_account, User, Pass}).
 close_account(User, Pass) -> call({close_account, User, Pass}).
@@ -24,13 +24,13 @@ loop(Map) ->
             case maps:find(User, Map) of
                 error ->
                     % enviar a mensagem a quem fez o pedido(FROm)
-                    From ! {account_created, ?MODULE},
+                    From ! {account_created, login_manager},
                     % criar a conta, adicionando ao dict o username e um tuplo passwd e logged in
                     loop(maps:put(User, {Pass, false}, Map));
 
                 % como já existe, envia a quem pediu a mensagem a dizer que existe
                 _ ->
-                    From ! {user_exists, ?MODULE},
+                    From ! {user_exists, login_manager},
                     loop(Map)
             end;
 
@@ -38,44 +38,43 @@ loop(Map) ->
             case maps:find(User, Map) of
                 % usa o pattern matching se a Pass no argumento for igual ao que está no dict, senão dá erro
                 {ok, {Pass, _}} ->
-                    From ! {account_closed, ?MODULE},
-                    loop(dict:remove(User, Map));
+                    From ! {account_closed, login_manager},
+                    loop(maps:remove(User, Map));
 
                 _ ->
-                    From ! {user_not_exists, ?MODULE},
+                    From ! {user_not_exists, login_manager},
                     loop(Map)
             end;
 
         {{login, User, Pass}, From} ->
             case maps:find(User, Map) of
                 {ok, {Pass, false}} ->
-                    From ! {login_done, ?MODULE},
+                    From ! {login_done, login_manager},
                     loop(maps:put(User, {Pass, true}, Map));
                 {ok, {Pass, true}} ->
-                    From ! {already_logged_in, ?MODULE},
+                    From ! {already_logged_in, login_manager},
                     loop(Map);
                 _ ->
-                    From ! {login_invalid, ?MODULE},
+                    From ! {login_invalid, login_manager},
                     loop(Map)
             end;
 
         {{logout, User}, From} ->
             case maps:find(User, Map) of
                 {ok, {Pass, _}} ->
-                    From ! {logout_done, ?MODULE},
+                    From ! {logout_done, login_manager},
                     loop(maps:put(User, {Pass, false}, Map));
                 _ ->
-                    From ! {logout_invalid, ?MODULE},
+                    From ! {logout_invalid, login_manager},
                     loop(Map)
             end;
 
         {online, From} ->
             User_list = [User || {User, {_, true}} <- maps:to_list(Map)],
-            From ! {{online, User_list},?MODULE},
+            From ! {{online, User_list},login_manager},
             loop(Map);
 
         {stop, From} ->
-            From ! {stopped, ?MODULE}
+            From ! {stopped, login_manager}
 
     end.
-

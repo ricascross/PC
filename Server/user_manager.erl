@@ -59,20 +59,20 @@ userAuth(Sock) ->
   end.
 
 % Função que devolve uma partida nova
-newGame(Sock, Username) ->
-  matchManager ! {newPlayer, Username, self()},
+newGame(Sock, User) ->
+  match_manager ! {newPlayer, User, self()},
   receive
-    {initialMatch, MatchInfo, Match, matchManager} ->
+    {initialMatch, MatchInfo, Match, match_manager} ->
       initialInfo(Sock, MatchInfo),
       Match;
     {tcp_closed, _} ->
-      io:format("User ~s disconnected~n", [Username]),
-      matchManager ! {leaveWaitMatch, Username, self()},
-      logout(Username);
+      io:format("User ~s disconnected~n", [User]),
+      match_manager ! {leaveWaitMatch, User, self()},
+      logout(User);
     {tcp_error, _, _} ->
-      io:format("User ~s disconnected with error~n", [Username]),
-      matchManager ! {leaveWaitMatch, Username, self()},
-      logout(Username)
+      io:format("User ~s disconnected with error~n", [User]),
+      match_manager ! {leaveWaitMatch, User, self()},
+      logout(User)
   end.
 
 %Funcao para gerir o jogo apos login validado
