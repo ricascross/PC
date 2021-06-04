@@ -15,7 +15,7 @@ userAuth(Sock) ->
           case Res of
             account_created ->
               gen_tcp:send(Sock, io_lib:format("Registered~n", [])),
-              userInGame();
+              userInGame(Sock, User, newGame(Sock, User));
             user_exists ->
               gen_tcp:send(Sock, io_lib:format("UserExists~n", [])),
               userAuth(Sock)
@@ -38,10 +38,10 @@ userAuth(Sock) ->
               userInGame(Sock, User, newGame(Sock, User));
             already_logged_in ->
               gen_tcp:send(Sock, io_lib:format("AlreadyLoggedIn~n", [])),
-              user(Sock);
+              userAuth(Sock);
             login_invalid ->
               gen_tcp:send(Sock, io_lib:format("LoginInvalid~n", [])),
-              user(Sock)
+              userAuth(Sock)
           end;
 
         ["logout", User] ->
@@ -56,6 +56,23 @@ userAuth(Sock) ->
         _ ->
           self() ! gen_tcp:send(Sock, io_lib:format("InvalidCommand~n", []))
       end
+  end.
+
+% Função que devolve uma partida nova
+newGame(Sock, Username) ->
+  matchManager ! {newPlayer, Username, self()},
+  receive
+    {initialMatch, MatchInfo, Match, matchManager} ->
+      initialInfo(Sock, MatchInfo),
+      Match;
+    {tcp_closed, _} ->
+      io:format("User ~s disconnected~n", [Username]),
+      matchManager ! {leaveWaitMatch, Username, self()},
+      logout(Username);
+    {tcp_error, _, _} ->
+      io:format("User ~s disconnected with error~n", [Username]),
+      matchManager ! {leaveWaitMatch, Username, self()},
+      logout(Username)
   end.
 
 %Funcao para gerir o jogo apos login validado
