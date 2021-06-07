@@ -107,3 +107,37 @@ createPlayer(Username, Players, PressedKeys, BestScore) ->
          Player7 = maps:put(pressedKeys, PressedKeys, Player6),
          Player8 = maps:put(bestScore, BestScore1, Player7)
    end.
+
+eatingEventCreature(Player, Creature) ->
+   {ok, XP} = maps:find(x, Player),
+   {ok, YP} = maps:find(y, Player),
+   {ok, RP} = maps:find(radius, Player),
+   {ok, XC} = maps:find(x, Creature),
+   {ok, YC} = maps:find(y, Creature),
+   {ok, RC} = maps:find(radius, Creature),
+   {ok, Type} = maps:find(type, Creature),
+   Dist = math:sqrt(math:pow(XC - XP, 2) + math:pow(YC - YP, 2)),
+   case Type of
+      food ->
+         % Sobreposição total
+         if
+            Dist < RP - RC andalso RP > RC ->
+               SizeP = math:pi() * RP * RP,
+               SizeC = math:pi() * RC * RC,
+               Res = math:sqrt((SizeP + SizeC)/math:pi()) - RP,
+               {true, Res};
+            true ->
+               false
+         end;
+      poison ->
+         % Sobreposição parcial
+         if
+            Dist < RP + RC andalso RP > RC ->
+               SizeP = math:pi() * RP * RP,
+               SizeC = math:pi() * RC * RC,
+               Res = math:sqrt((SizeP - SizeC)/math:pi()) - RP,
+               {true, Res};
+            true ->
+               false
+         end
+   end.
