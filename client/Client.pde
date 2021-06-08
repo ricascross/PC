@@ -437,7 +437,7 @@ void showMainMenu() {
   textSize(75);
   fill(0);
   textAlign(CENTER,CENTER);
-  text("Buracos", width/2, height/5);
+  text("Trabalho Prático", width/2, height/5);
 
   strokeWeight(0);
   stroke(211, 211, 211);
