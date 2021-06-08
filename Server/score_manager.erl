@@ -7,10 +7,11 @@ scoreBoard(Scores, Pids) ->
     {getScores, Pid} ->
       Pid ! {scores, Scores},
       scoreBoard(Scores, Pids);
-  %%%%%%%%%%%%%%%%
-  %meter os subscribes ou não
-  %%%%%%%%%%%%%%%
-
+    {followScores, Pid} ->
+      Pid ! {scores, Scores},
+      scoreBoard(Scores, [Pid|Pids]);
+    {unfollowScores, Pid} ->
+      scoreBoard(Scores, lists:delete(Pid, Pids));
   % verifica se a nova pontuação de um utilizador é maior que a sua anterior
   % se for, atualiza o seu novo score, senão mantem o seu score.
     {newScore, {User, Score}} ->
