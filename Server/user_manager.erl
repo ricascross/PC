@@ -146,14 +146,14 @@ matchOverUserResponse(Sock, Username) ->
 initialInfo(Sock, MatchInfo) ->
   gen_tcp:send(Sock, io_lib:format("StartInitialMatchInfo~n", [])), %for debugging
   sendPlayersInfo(Sock, MatchInfo),
-  sendBlobsInfo(Sock, MatchInfo),
+  sendCreaturesInfo(Sock, MatchInfo),
   sendScores(Sock, MatchInfo),
   gen_tcp:send(Sock, io_lib:format("EndInitialMatchInfo~n", [])). %for debugging
 
 sendUpdateInfo(Sock, UpdateInfo) ->
   gen_tcp:send(Sock, io_lib:format("StartMatchInfo~n", [])), %for debugging
   sendPlayersInfo(Sock, UpdateInfo),
-  sendBlobsInfo(Sock, UpdateInfo),
+  sendCreaturesInfo(Sock, UpdateInfo),
   sendScores(Sock, UpdateInfo),
   gen_tcp:send(Sock, io_lib:format("EndMatchInfo~n", [])). %for debugging
 
@@ -174,34 +174,33 @@ sendPlayerInfo(Sock, [H|T]) ->
   {ok, Y} = maps:find(y, H),
   {ok, Radius} = maps:find(radius, H),
   {ok, Score} = maps:find(score, H),
-  {ok, Speed} = maps:find(speedBonus, H),
-  gen_tcp:send(Sock, io_lib:format("P,~s,~w,~w,~w,~w,~w~n", [Username, X, Y, Radius, Score, Speed])),
+  gen_tcp:send(Sock, io_lib:format("P,~s,~w,~w,~w,~w~n", [Username, X, Y, Radius, Score])),
   sendPlayerInfo(Sock, T).
 
-sendBlobsInfo(Sock, MatchInfo) ->
-  case maps:find(blobs, MatchInfo) of
-    {ok, Blobs} ->
-      sendBlobInfo(Sock, Blobs, 0);
+sendCreaturesInfo(Sock, MatchInfo) ->
+  case maps:find(creature, MatchInfo) of
+    {ok, Creatures} ->
+      sendCreatureInfo(Sock, Creatures, 0);
     error ->
       nothingToSend
   end.
 
-sendBlobInfo(_, [], _) ->
-  blobsDone;
-sendBlobInfo(Sock, [{Idx, Blob}|T], _) ->
-  {ok, Type} = maps:find(type, Blob),
-  {ok, X} = maps:find(x, Blob),
-  {ok, Y} = maps:find(y, Blob),
-  {ok, Radius} = maps:find(radius, Blob),
-  gen_tcp:send(Sock, io_lib:format("B,~w,~w,~w,~w,~w~n", [Idx, Type, X, Y, Radius])),
-  sendBlobInfo(Sock, T, ok);
-sendBlobInfo(Sock, [H|T], Idx) ->
+sendCreatureInfo(_, [], _) ->
+  creaturesDone;
+sendCreatureInfo(Sock, [{Idx, Creature}|T], _) ->
+  {ok, Type} = maps:find(type, Creature),
+  {ok, X} = maps:find(x, Creature),
+  {ok, Y} = maps:find(y, Creature),
+  {ok, Radius} = maps:find(radius, Creature),
+  gen_tcp:send(Sock, io_lib:format("C,~w,~w,~w,~w,~w~n", [Idx, Type, X, Y, Radius])),
+  sendCreatureInfo(Sock, T, ok);
+sendCreatureInfo(Sock, [H|T], Idx) ->
   {ok, Type} = maps:find(type, H),
   {ok, X} = maps:find(x, H),
   {ok, Y} = maps:find(y, H),
   {ok, Radius} = maps:find(radius, H),
-  gen_tcp:send(Sock, io_lib:format("B,~w,~w,~w,~w,~w~n", [Idx, Type, X, Y, Radius])),
-  sendBlobInfo(Sock, T, Idx+1).
+  gen_tcp:send(Sock, io_lib:format("C,~w,~w,~w,~w,~w~n", [Idx, Type, X, Y, Radius])),
+  sendCreatureInfo(Sock, T, Idx+1).
 
 sendScores(Sock, MatchInfo) ->
   case maps:find(scores, MatchInfo) of
@@ -214,5 +213,5 @@ sendScores(Sock, MatchInfo) ->
 sendScore(_, []) ->
   scoresDone;
 sendScore(Sock, [{Username, Score}|T]) ->
-  gen_tcp:send(Sock, io_lib:format("S:~s:~w~n", [Username, Score])),
+  gen_tcp:send(Sock, io_lib:format("S,~s,~w~n", [Username, Score])),
   sendScore(Sock, T).
