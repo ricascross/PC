@@ -4,8 +4,7 @@
 -import(user_manager,[userAuth/1]).
 -import(score_manager,[scoreBoard/2]).
 
-
-start() -> server(1234).
+start() -> server(4321).
 
 server(Port)->
    register(match_manager, spawn(fun() -> roomMatch([], [], 3) end)),
@@ -28,9 +27,10 @@ roomMatch(ActivePlayers, WaitingQueue, MaxPlayers) ->
          if
             length(ActivePlayers) < MaxPlayers ->
                io:format("User ~s wants to play. Waiting for opponent...~n", [User]),
-               Player = lists:nth(0,WaitingQueue1),
+               Player = lists:nth(1,WaitingQueue1),
                WaitingQueue2 = lists:delete(Player, WaitingQueue1),
                ActivePlayers1 = [ Player | ActivePlayers],
+               %io:format("Tamanho = ~s~n", [length(ActivePlayers1)]),
                roomMatch(ActivePlayers1, WaitingQueue2, MaxPlayers);
             true ->
                io:format("Opponents found~n", []),
@@ -267,7 +267,7 @@ interactions(MatchInfo) ->
    {ok, Players} = maps:find(players, MatchInfo),
    {ok, Creatures} = maps:find(creatures, MatchInfo),
 
-   % Verificar se os jogadores comem blobs
+   % Verificar se os jogadores comem criaturas
    {FoodIndices, PoisonIndices, PlayersRadiusChange, UpdatedPlayers} = verifyCreaturesEaten(maps:to_list(Players), Creatures, {[], [], [], Players}),
    NewPlayers = updatePlayers(UpdatedPlayers, PlayersRadiusChange, [], maps:new()),
 
@@ -413,7 +413,6 @@ leaderboard([{_, Player}|Tail], Res) ->
 updatePosition(X, Y, _, _, []) ->
    {X,Y};
 updatePosition(X, Y, Acc, Radius, [{K,true}|Keys]) ->
-   MaxVel = 8,
    case K of
       up ->
          Y1 = Y - 1,
@@ -450,15 +449,14 @@ keyPressedEvent([{Pid,PlayerData}|Players], Res, UpdatedPlayers) ->
             true;
          _ ->
             false
-      end
-                          end, PressedKeys),
+      end end, PressedKeys),
    {X1, Y1} = updatePosition(X, Y, Acc, Radius, maps:to_list(TrueKeys)),
    PD1 = maps:update(x, X1, PlayerData),
    PD2 = maps:update(y, Y1, PD1),
    Res1 = maps:put(Pid, PD2, Res),
    case {X1, Y1} of
       {X, Y} ->
-         PlayerWasUpdated = false;
+         PlayerWasUpdated = false; %nao ha movimento
       _ ->
          PlayerWasUpdated = true
    end,

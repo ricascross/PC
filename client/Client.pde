@@ -65,11 +65,11 @@ void mouseClicked() {
     if (inRect(width/2 - x/2, height/2 - y, x, y)) {
         loginMenu.set(true);
         mainMenu.set(false);
-    // Register
+    // Create Account
     } else if (inRect(width/2 - x/2, height/2 + y, x, y)) {
         registerMenu.set(true);
         mainMenu.set(false);
-    // Unregister
+    // Close Account
     } else if (inRect(width/2 - x/2, height/2 + 3*y, x, y)) {
         unregisterMenu.set(true);
         mainMenu.set(false);
@@ -78,7 +78,7 @@ void mouseClicked() {
         try {
           toSocket.println("Scores");
           toSocket.flush();
-          fromSocket.readLine(); // Ignorar "BeginScores"
+          fromSocket.readLine();
           String info = fromSocket.readLine();
           GameState e = state.get();
           e.bestScores = new ArrayList<Score>();
@@ -234,7 +234,7 @@ void keyReleased() {
   if (matchMenu.get()) {
     if (key == CODED) {
       if (keyCode == UP)
-        toSocket.println("kKeyChanged,up,False");
+        toSocket.println("KeyChanged,up,False");
 
       if (keyCode == DOWN)
         toSocket.println("KeyChanged,down,False");
@@ -254,16 +254,18 @@ void keyReleased() {
 void turnOnIcons() {
   iconsOn.set(true);
   shapeMode(CENTER);
-  for(int i = 1; i < 8; i++){
+  for(int i = 1; i <= 8; i++){
     PShape sh = loadShape("e"+i+".svg");
     icons.add(sh);
   }
 }
 
+PImage bg,bg2;
+
 void setup() {
   try {
     // Conectar com o servidor e criar um socket
-    s = new Socket("localhost", 1234);
+    s = new Socket("localhost", 4321);
 
     // Criar um objeto para ler do socket e um para escrever para o socket
     fromSocket = new BufferedReader(new InputStreamReader(s.getInputStream()));
@@ -273,13 +275,19 @@ void setup() {
     exit();
     return;
   }
-
   //turnOnIcons();
-  fullScreen(P2D);
+  //fullScreen(P2D);
+}
+
+public void settings() {
+  size(1366, 768);
+  bg = loadImage("data/menu.png");
+  bg2 = loadImage("data/background.jpg");
 }
 
 void draw() {
-  background(211,211,211);
+  //background(211,211,211);
+  background(bg);
   if (messageMenu.get())
     showMessage();
   else if (mainMenu.get())
@@ -314,7 +322,7 @@ void showOnlineMenu() {
   textSize(24);
   fill(0);
   textAlign(CENTER, CENTER);
-  text("Play", width/2, height/2 - y/2);
+  text("Jogar", width/2, height/2 - y/2);
 
   if (iconsOn.get()) {
     strokeWeight(0);
@@ -327,7 +335,7 @@ void showOnlineMenu() {
     rect(width/2 - x/2, height/2 + y, x, y, 10);
     fill(0);
     textAlign(CENTER, CENTER);
-    text("Select Avatar", width/2, height/2 + y + y/2);
+    text("Escolher skin", width/2, height/2 + y + y/2);
   }
 }
 
@@ -335,7 +343,7 @@ void showSelectionMenu() {
   textSize(50);
   fill(0);
   textAlign(CENTER,CENTER);
-  text("Select Avatar", width/2, height/7);
+  text("Escolher skin", width/2, height/7);
 
   float xOff = width/8;
   float yOff = height/2.5;
@@ -361,7 +369,7 @@ void showSelectionMenu() {
   fill(0);
   textSize(24);
   textAlign(CENTER, CENTER);
-  text("Back", width/2, height/2 + 6*y + y/2);
+  text("Recuar", width/2, height/2 + 6*y + y/2);
 }
 
 void showMessage() {
@@ -395,7 +403,7 @@ void showOptionsMenu() {
   textSize(50);
   fill(0);
   textAlign(CENTER,CENTER);
-  text("Options", width/2, height/7);
+  text("Opções", width/2, height/7);
 
   strokeWeight(0);
   stroke(211, 211, 211);
@@ -430,14 +438,15 @@ void showOptionsMenu() {
   rect(width/2 - x/2, height/2 + 6*y, x, y, 10);
   fill(0);
   textAlign(CENTER, CENTER);
-  text("Back", width/2, height/2 + 6*y + y/2);
+  text("Recuar", width/2, height/2 + 6*y + y/2);
 }
 
 void showMainMenu() {
+  stroke(0, 0, 0);
   textSize(75);
-  fill(0);
+  fill(255);
   textAlign(CENTER,CENTER);
-  text("Trabalho Prático", width/2, height/5);
+  text("Choque de Glutões", width/2, height/5);
 
   strokeWeight(0);
   stroke(211, 211, 211);
@@ -447,8 +456,8 @@ void showMainMenu() {
   }
   fill(255, 60, 60);
   rect(width/2 - x/2, height/2 - y, x, y, 10);
-  textSize(24);
-  fill(0);
+  textSize(26);
+  fill(255);
   textAlign(CENTER, CENTER);
   text("Login", width/2, height/2 - y/2);
 
@@ -460,9 +469,9 @@ void showMainMenu() {
   }
   fill(60, 255, 60);
   rect(width/2 - x/2, height/2 + y, x, y, 10);
-  fill(0);
+  fill(255);
   textAlign(CENTER, CENTER);
-  text("Register", width/2, height/2 + y + y/2);
+  text("Registo", width/2, height/2 + y + y/2);
 
   strokeWeight(0);
   stroke(211, 211, 211);
@@ -472,9 +481,9 @@ void showMainMenu() {
   }
   fill(249, 131, 34);
   rect(width/2 - x/2, height/2 + 3*y, x, y, 10);
-  fill(0);
+  fill(255);
   textAlign(CENTER, CENTER);
-  text("Unregister", width/2, height/2 + 3*y + y/2);
+  text("Fechar conta", width/2, height/2 + 3*y + y/2);
 
   strokeWeight(0);
   stroke(211, 211, 211);
@@ -484,9 +493,9 @@ void showMainMenu() {
   }
   fill(60, 60, 255);
   rect(width/2 - x/2, height/2 + 5*y, x, y, 10);
-  fill(0);
+  fill(255);
   textAlign(CENTER, CENTER);
-  text("Scoreboard", width/2, height/2 + 5*y + y/2);
+  text("Pontuações", width/2, height/2 + 5*y + y/2);
 
   strokeWeight(0);
   stroke(211, 211, 211);
@@ -496,9 +505,9 @@ void showMainMenu() {
   }
   fill(130);
   rect(0.01*width, 0.9*height, x/2, y, 10);
-  fill(0);
+  fill(255);
   textAlign(CENTER, CENTER);
-  text("Options", 0.01*width + x/4, 0.9*height + y/2);
+  text("Opções", 0.01*width + x/4, 0.9*height + y/2);
 
   fill(0);
   textSize(10);
@@ -510,15 +519,16 @@ void showLoginRegisterUnregisterScreen() {
   textAlign(CENTER,CENTER);
   if(loginMenu.get()) {
     fill(255, 60, 60);
+    fill(255);
     text("Login", width/2, height/5);
   } else if(registerMenu.get()) {
     fill(60, 255, 60);
-    text("Register", width/2, height/5);
+    text("Registo", width/2, height/5);
   } else if(unregisterMenu.get()) {
     fill(249, 131, 34);
-    text("Unregister", width/2, height/5);
+    text("Fechar conta", width/2, height/5);
   }
-  
+    
   strokeWeight(0);
   stroke(211, 211, 211);
   fill(255);
@@ -546,14 +556,14 @@ void showLoginRegisterUnregisterScreen() {
   rect(width/2 - x/2, height/2 + 3*y, x, y, 10);
   fill(0);
   textAlign(CENTER, CENTER);
-  text("Back", width/2, height/2 + 3*y + y/2 - 4);
+  text("Recuar", width/2, height/2 + 3*y + y/2 - 4);
 }
 
 void showWaitMatchScreen() {
   textSize(32);
   fill(255, 0, 0);
   textAlign(CENTER,CENTER);
-  text("Waiting for opponent...", width/2, height/2);
+  text("À espera de adversários...", width/2, height/2);
 }
 
 void showBestScoresScreen() {
@@ -562,7 +572,7 @@ void showBestScoresScreen() {
   textSize(50);
   fill(60, 60, 255);
   textAlign(CENTER, CENTER);
-  text("Best Scores", width/2, height/5);
+  text("Melhores pontuações", width/2, height/5);
   textSize(30);
   for (int i = 0; i < bestScores.size(); i++) {
     Score s = bestScores.get(i);
@@ -580,7 +590,7 @@ void showBestScoresScreen() {
   fill(0);
   textSize(24);
   textAlign(CENTER, CENTER);
-  text("Back", width/2, height/2 + 5*y + y/2);
+  text("Recuar", width/2, height/2 + 5*y + y/2);
 }
 
 void showLeaderboardScreen() {
@@ -609,7 +619,7 @@ void showLeaderboardScreen() {
   rect(width/2 - x - x/5, height/2 + 3*y, x, y, 10);
   fill(0);
   textSize(24);
-  text("Exit", width/2 - x/2 - x/5, height/2 + 3*y + y/2);
+  text("Sair", width/2 - x/2 - x/5, height/2 + 3*y + y/2);
 
   strokeWeight(0);
   stroke(211, 211, 211);
@@ -621,12 +631,12 @@ void showLeaderboardScreen() {
   rect(width/2 + x/5, height/2 + 3*y, x, y, 10);
   fill(0);
   textSize(24);
-  text("Continue", width/2 + x/2 + x/5, height/2 + 3*y + y/2);
+  text("Continuar", width/2 + x/2 + x/5, height/2 + 3*y + y/2);
 }
 
 void showMatchScreen() {
   // Pintar o plano de fundo de branco
-  background(255);
+  background(bg2);
 
   // Extrair as informações do estado atual
   GameState e = state.get();

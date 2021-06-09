@@ -67,7 +67,7 @@ class Player implements Comparable{
     this.position = new PVector(newx, newy);
   }
   
-    int compareTo(Object object) {
+  int compareTo(Object object) {
     if(object == null)
       return 0;
     Player p = (Player)object;

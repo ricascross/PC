@@ -144,18 +144,18 @@ matchOverUserResponse(Sock, Username) ->
   end.
 
 initialInfo(Sock, MatchInfo) ->
-  gen_tcp:send(Sock, io_lib:format("StartInitialMatchInfo~n", [])), %for debugging
+  gen_tcp:send(Sock, io_lib:format("StartInitialMatchInfo~n", [])),
   sendPlayersInfo(Sock, MatchInfo),
   sendCreaturesInfo(Sock, MatchInfo),
   sendScores(Sock, MatchInfo),
-  gen_tcp:send(Sock, io_lib:format("EndInitialMatchInfo~n", [])). %for debugging
+  gen_tcp:send(Sock, io_lib:format("EndInitialMatchInfo~n", [])).
 
 sendUpdateInfo(Sock, UpdateInfo) ->
-  gen_tcp:send(Sock, io_lib:format("StartMatchInfo~n", [])), %for debugging
+  gen_tcp:send(Sock, io_lib:format("StartMatchInfo~n", [])),
   sendPlayersInfo(Sock, UpdateInfo),
   sendCreaturesInfo(Sock, UpdateInfo),
   sendScores(Sock, UpdateInfo),
-  gen_tcp:send(Sock, io_lib:format("EndMatchInfo~n", [])). %for debugging
+  gen_tcp:send(Sock, io_lib:format("EndMatchInfo~n", [])).
 
 sendPlayersInfo(Sock, MatchInfo) ->
   case maps:find(players, MatchInfo) of

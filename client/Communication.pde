@@ -46,7 +46,8 @@ class Reader extends Thread {
               else
                 // Adversários
                 e.enemies.add(new Player(fields[1], Float.parseFloat(fields[2]), Float.parseFloat(fields[3]), Float.parseFloat(fields[4]), Float.parseFloat(fields[5]), this.imageID, true));
-            } else if (fields[0].equals("C")) {
+            } 
+            else if (fields[0].equals("C")) {
               if (fields[2].equals("poison"))
                 e.creatures.add(new Creature(Float.parseFloat(fields[3]), Float.parseFloat(fields[4]), Float.parseFloat(fields[5]), 1));
               else if (fields[2].equals("food"))
