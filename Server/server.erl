@@ -24,22 +24,46 @@ roomMatch(ActivePlayers, WaitingQueue, MaxPlayers) ->
    receive
       {newPlayer, User, Pid} ->
          WaitingQueue1 = [{Pid, User} | WaitingQueue],
+
          if
             length(ActivePlayers) < MaxPlayers ->
                io:format("User ~s wants to play. Waiting for opponent...~n", [User]),
                Player = lists:nth(1,WaitingQueue1),
                WaitingQueue2 = lists:delete(Player, WaitingQueue1),
                ActivePlayers1 = [ Player | ActivePlayers],
-               %io:format("Tamanho = ~s~n", [length(ActivePlayers1)]),
-               roomMatch(ActivePlayers1, WaitingQueue2, MaxPlayers);
+               if
+                  length(ActivePlayers1) == MaxPlayers ->
+                     io:format("Opponents found~n", []),
+                     spawn(fun()-> matchInitialize(ActivePlayers1, maps:new(), [], maps:new()) end);
+                     %roomMatch(ActivePlayers1, WaitingQueue, MaxPlayers);
+                  true ->
+                     %io:format("Tamanho = ~s~n", [length(ActivePlayers1)]),
+                     roomMatch(ActivePlayers1, WaitingQueue2, MaxPlayers)
+               end;
             true ->
-               io:format("Opponents found~n", []),
-               spawn(fun()-> matchInitialize(ActivePlayers, maps:new(), [], maps:new()) end),
                roomMatch(ActivePlayers, WaitingQueue, MaxPlayers)
          end;
       {leaveWaitMatch, User, Pid} ->
          io:format("User ~s left~n", [User]),
-         roomMatch(ActivePlayers -- [{Pid, User}], WaitingQueue, MaxPlayers);
+         case length(WaitingQueue) of
+            0 ->
+               roomMatch(ActivePlayers -- [{Pid, User}], WaitingQueue, MaxPlayers);
+            _ ->
+               ActivePlayers2 = ActivePlayers -- [{Pid, User}],
+               Player = lists:nth(1,WaitingQueue),
+               WaitingQueue1 = lists:delete(Player, WaitingQueue),
+               ActivePlayers1 = [ Player | ActivePlayers2],
+               if
+                  length(ActivePlayers1) == MaxPlayers ->
+                     io:format("Opponents found~n", []),
+                     spawn(fun()-> matchInitialize(ActivePlayers1, maps:new(), [], maps:new()) end),
+                     roomMatch(ActivePlayers1, WaitingQueue1, MaxPlayers);
+                  true ->
+                     %io:format("Tamanho = ~s~n", [length(ActivePlayers1)]),
+                     roomMatch(ActivePlayers1, WaitingQueue1, MaxPlayers)
+               end
+         end;
+         %roomMatch(ActivePlayers -- [{Pid, User}], WaitingQueue, MaxPlayers);
       {matchOver, Match} ->
          io:format("Match ~p is over~n", [Match]),
          roomMatch([], WaitingQueue, MaxPlayers)
@@ -296,8 +320,9 @@ matchInitialize([], Players, Pids, PressedKeys) ->
             Creatures = createCreature(poison, 50, maps:to_list(Players), []) ++ createCreature(food, 50, maps:to_list(Players), []),
             Info = maps:new(),
             Info1 = maps:put(players,Players, Info),
-            Info2 = maps:put(creature,Creatures, Info1),
+            Info2 = maps:put(creatures,Creatures, Info1),
             Match = maps:put(scores,Scores, Info2),
+            io:format("Match Info ~p~n", [Match]),
             [Player ! {initialMatch, Match, PidMatch, match_manager} || Player <- Pids],
             matchSender(Match, Pids, PidMatch, false)
       end
@@ -318,7 +343,7 @@ matchInitialize([{Pid, Username}|T], Players, Pids, PressedKeys) ->
 % Função que gere uma partida entre vários utilizadores
 match(PressedKeys, PlayersPids, MatchSender) ->
    receive
-      {keyChanged, Key, Change, Pid} ->
+      {(keyChanged), Key, Change, Pid} ->
          {ok, PlayerKeys} = maps:find(Pid, PressedKeys),
          case Change of
             false ->

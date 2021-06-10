@@ -178,7 +178,7 @@ sendPlayerInfo(Sock, [H|T]) ->
   sendPlayerInfo(Sock, T).
 
 sendCreaturesInfo(Sock, MatchInfo) ->
-  case maps:find(creature, MatchInfo) of
+  case maps:find(creatures, MatchInfo) of
     {ok, Creatures} ->
       sendCreatureInfo(Sock, Creatures, 0);
     error ->

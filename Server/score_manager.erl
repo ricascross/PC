@@ -15,8 +15,11 @@ scoreBoard(Scores, Pids) ->
   % verifica se a nova pontuação de um utilizador é maior que a sua anterior
   % se for, atualiza o seu novo score, senão mantem o seu score.
     {newScore, {User, Score}} ->
+      io:format("Pids: ~p~n", [Pids]),
       case lists:filter(fun({Username, _}) -> Username == User end, Scores) of
+
         [] ->
+          io:format("lengthScores ~p~n",[length(Scores)]),
           case length(Scores) of
             5 ->
               {_, Lowest} = lists:last(Scores),
@@ -28,6 +31,7 @@ scoreBoard(Scores, Pids) ->
                   NewScore = Scores
               end;
             _ ->
+              io:format("lengthScores2 ~p~n",[length(Scores)]),
               NewScore = updateTopScoreBoard({User, Score}, Scores),
               sendTopScoreBoard(NewScore, Pids)
           end;
@@ -53,10 +57,8 @@ sendTopScoreBoard(Scores, Receivers) ->
 % Função que adiciona uma pontuação à lista das melhores pontuações
 updateTopScoreBoard(Score, []) ->
   [Score];
-
 updateTopScoreBoard({User, Score1}, [_, Score2 | _] = Scores) when Score1 > Score2 ->
   [{User, Score1} | Scores];
-
 updateTopScoreBoard({User1, Score1}, [User2, Score2 | T] = _) when Score1 =< Score2 ->
   [{User2, Score2} | updateTopScoreBoard({User1, Score1}, T)].
 
