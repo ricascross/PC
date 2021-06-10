@@ -7,9 +7,9 @@
 start() -> server(4321).
 
 server(Port)->
-   register(match_manager, spawn(fun() -> roomMatch([], [], 3) end)),
+   register(match_manager, spawn(fun() -> roomMatch([], [], 1) end)),
    register(login_manager, start_login()),
-   register(score_manager, spawn(fun() -> scoreBoard([], []) end)),
+   register(score_manager, spawn(fun() -> scoreBoard([], self()) end)),
    {ok, LSock} = gen_tcp:listen(Port, [binary, {packet, line}, {reuseaddr, true}]),
    io:format("Servidor pronto.~n", []),
    acceptor(LSock).
@@ -34,8 +34,8 @@ roomMatch(ActivePlayers, WaitingQueue, MaxPlayers) ->
                if
                   length(ActivePlayers1) == MaxPlayers ->
                      io:format("Opponents found~n", []),
-                     spawn(fun()-> matchInitialize(ActivePlayers1, maps:new(), [], maps:new()) end);
-                     %roomMatch(ActivePlayers1, WaitingQueue, MaxPlayers);
+                     matchInitialize(ActivePlayers1, maps:new(), [], maps:new()),
+                     roomMatch(ActivePlayers1, WaitingQueue, MaxPlayers);
                   true ->
                      %io:format("Tamanho = ~s~n", [length(ActivePlayers1)]),
                      roomMatch(ActivePlayers1, WaitingQueue2, MaxPlayers)
@@ -56,7 +56,7 @@ roomMatch(ActivePlayers, WaitingQueue, MaxPlayers) ->
                if
                   length(ActivePlayers1) == MaxPlayers ->
                      io:format("Opponents found~n", []),
-                     spawn(fun()-> matchInitialize(ActivePlayers1, maps:new(), [], maps:new()) end),
+                     matchInitialize(ActivePlayers1, maps:new(), [], maps:new()),
                      roomMatch(ActivePlayers1, WaitingQueue1, MaxPlayers);
                   true ->
                      %io:format("Tamanho = ~s~n", [length(ActivePlayers1)]),
@@ -267,7 +267,11 @@ updatePlayers(Players, [{Pid, Change}|T], DeadPlayers, Res) ->
    NewPlayer1 = maps:put(radius, PlayerRadius + Change, Player),
    {ok, R} = maps:find(radius, NewPlayer1),
    NewScore = math:pi() * R * R,
+   %io:format("Username: ~p~n",[Username]),
+   %io:format("NewScore: ~p~n",[NewScore]),
+   %Teste = score_manager ! {newScore, {Username, NewScore}},
    score_manager ! {newScore, {Username, NewScore}},
+   %io:format("NewScore: ~p~n",[Teste]),
    NewPlayer2 = maps:put(score, NewScore, NewPlayer1),
    if
       NewScore > BestScore ->
@@ -314,7 +318,8 @@ matchInitialize([], Players, Pids, PressedKeys) ->
    PidMatch = self(),
 
    MatchSender = spawn(fun() ->
-      score_manager ! {followScores, self()},
+      %score_manager ! {followScores, self()},
+      score_manager ! {getScores, self()},
       receive
          {scores, Scores} ->
             Creatures = createCreature(poison, 50, maps:to_list(Players), []) ++ createCreature(food, 50, maps:to_list(Players), []),
@@ -322,7 +327,6 @@ matchInitialize([], Players, Pids, PressedKeys) ->
             Info1 = maps:put(players,Players, Info),
             Info2 = maps:put(creatures,Creatures, Info1),
             Match = maps:put(scores,Scores, Info2),
-            io:format("Match Info ~p~n", [Match]),
             [Player ! {initialMatch, Match, PidMatch, match_manager} || Player <- Pids],
             matchSender(Match, Pids, PidMatch, false)
       end
@@ -348,22 +352,22 @@ match(PressedKeys, PlayersPids, MatchSender) ->
          case Change of
             false ->
                case Key of
-                  <<"up">> ->
+                  "up" ->
                      PlayerKeys1 = maps:update(up, false, PlayerKeys),
                      PressedKeys1 = maps:update(Pid, PlayerKeys1, PressedKeys),
                      MatchSender ! {Pid, PlayerKeys1},
                      match(PressedKeys1, PlayersPids, MatchSender);
-                  <<"down">> ->
+                  "down" ->
                      PlayerKeys1 = maps:update(down, false, PlayerKeys),
                      PressedKeys1 = maps:update(Pid, PlayerKeys1, PressedKeys),
                      MatchSender ! {Pid, PlayerKeys1},
                      match(PressedKeys1, PlayersPids, MatchSender);
-                  <<"left">> ->
+                  "left" ->
                      PlayerKeys1 = maps:update(left, false, PlayerKeys),
                      PressedKeys1 = maps:update(Pid, PlayerKeys1, PressedKeys),
                      MatchSender ! {Pid, PlayerKeys1},
                      match(PressedKeys1, PlayersPids, MatchSender);
-                  <<"right">> ->
+                  "right" ->
                      PlayerKeys1 = maps:update(right, false, PlayerKeys),
                      PressedKeys1 = maps:update(Pid, PlayerKeys1, PressedKeys),
                      MatchSender ! {Pid, PlayerKeys1},
@@ -371,22 +375,22 @@ match(PressedKeys, PlayersPids, MatchSender) ->
                end;
             true ->
                case Key of
-                  <<"up">> ->
+                  "up" ->
                      PlayerKeys1 = maps:update(up, true, PlayerKeys),
                      PressedKeys1 = maps:update(Pid, PlayerKeys1, PressedKeys),
                      MatchSender ! {Pid, PlayerKeys1},
                      match(PressedKeys1, PlayersPids, MatchSender);
-                  <<"down">> ->
+                  "down" ->
                      PlayerKeys1 = maps:update(down, true, PlayerKeys),
                      PressedKeys1 = maps:update(Pid, PlayerKeys1, PressedKeys),
                      MatchSender ! {Pid, PlayerKeys1},
                      match(PressedKeys1, PlayersPids, MatchSender);
-                  <<"left">> ->
+                  "left" ->
                      PlayerKeys1 = maps:update(left, true, PlayerKeys),
                      PressedKeys1 = maps:update(Pid, PlayerKeys1, PressedKeys),
                      MatchSender ! {Pid, PlayerKeys1},
                      match(PressedKeys1, PlayersPids, MatchSender);
-                  <<"right">> ->
+                  "right" ->
                      PlayerKeys1 = maps:update(right, true, PlayerKeys),
                      PressedKeys1 = maps:update(Pid, PlayerKeys1, PressedKeys),
                      MatchSender ! {Pid, PlayerKeys1},
@@ -468,9 +472,10 @@ keyPressedEvent([{Pid,PlayerData}|Players], Res, UpdatedPlayers) ->
    {ok, X} = maps:find(x, PlayerData),
    {ok, Y} = maps:find(y, PlayerData),
    Acc = 1/(Radius * Radius * math:pi()) + 3,
+   %io:format("PressedKeys ~p~n", [PressedKeys]),
    TrueKeys = maps:filter(fun(_, V) ->
       case V of
-         {true, _} ->
+         true ->
             true;
          _ ->
             false

@@ -2,56 +2,49 @@
 -export([scoreBoard/2]).
 
 %Função que gere as melhores pontuações
-scoreBoard(Scores, Pids) ->
+scoreBoard(Scores, Pid) ->
   receive
-    {getScores, Pid} ->
-      Pid ! {scores, Scores},
-      scoreBoard(Scores, Pids);
-    {followScores, Pid} ->
-      Pid ! {scores, Scores},
-      scoreBoard(Scores, [Pid|Pids]);
-    {unfollowScores, Pid} ->
-      scoreBoard(Scores, lists:delete(Pid, Pids));
+    {getScores, Pid1} ->
+      Pid1 ! {scores, Scores},
+      scoreBoard(Scores, Pid);
+
   % verifica se a nova pontuação de um utilizador é maior que a sua anterior
   % se for, atualiza o seu novo score, senão mantem o seu score.
     {newScore, {User, Score}} ->
-      io:format("Pids: ~p~n", [Pids]),
       case lists:filter(fun({Username, _}) -> Username == User end, Scores) of
 
         [] ->
-          io:format("lengthScores ~p~n",[length(Scores)]),
           case length(Scores) of
             5 ->
               {_, Lowest} = lists:last(Scores),
               if
                 Score > Lowest ->
                   NewScore = updateTopScoreBoard({User, Score}, lists:droplast(Scores)),
-                  sendTopScoreBoard(NewScore, Pids);
+                  sendTopScoreBoard(NewScore, Pid);
                 true ->
                   NewScore = Scores
               end;
             _ ->
-              io:format("lengthScores2 ~p~n",[length(Scores)]),
-              NewScore = updateTopScoreBoard({User, Score}, Scores),
-              sendTopScoreBoard(NewScore, Pids)
+              NewScore = Scores,
+              sendTopScoreBoard(NewScore, Pid)
           end;
 
         [{_, CurrentScore}] when Score =< CurrentScore ->
           NewScore = Scores;
-        [{_, CurrentScore}] when Score >= CurrentScore ->
+        [{_, CurrentScore}] when Score > CurrentScore ->
           NewScore = updateTopScoreBoard({User, Score}, lists:filter(fun({Username, _}) ->
             Username /= User end, Scores)),
-          sendTopScoreBoard(NewScore, Pids)
+          sendTopScoreBoard(NewScore, Pid)
       end,
-      scoreBoard(NewScore, Pids)
+      scoreBoard(NewScore, Pid)
 
 
   end.
 
 
 %Função que envia as novas melhores pontuações a quem pretende recebê-las
-sendTopScoreBoard(Scores, Receivers) ->
-  [Receiv ! {scores, Scores} || Receiv <- Receivers].
+sendTopScoreBoard(Scores, Receiver) ->
+  Receiver ! {scores, Scores}.
 
 
 % Função que adiciona uma pontuação à lista das melhores pontuações
