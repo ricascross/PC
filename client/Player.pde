@@ -119,9 +119,6 @@ class Player implements Comparable{
   }
   
   void show() {
-    if (this.enemy)
-      return;
-
     strokeWeight(4);
     if (this.enemy)
       stroke(255, 0, 0);
@@ -147,6 +144,10 @@ class Player implements Comparable{
 
   Player clone() {
     return new Player(this);
+  }
+  
+  String toString(){
+    return this.username;
   }
   
 }

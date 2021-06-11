@@ -7,7 +7,7 @@
 start() -> server(4321).
 
 server(Port)->
-   register(match_manager, spawn(fun() -> roomMatch([], [], 1) end)),
+   register(match_manager, spawn(fun() -> roomMatch([], [], 2) end)),
    register(login_manager, start_login()),
    register(score_manager, spawn(fun() -> scoreBoard([], self()) end)),
    {ok, LSock} = gen_tcp:listen(Port, [binary, {packet, line}, {reuseaddr, true}]),
@@ -24,6 +24,7 @@ roomMatch(ActivePlayers, WaitingQueue, MaxPlayers) ->
    receive
       {newPlayer, User, Pid} ->
          WaitingQueue1 = [{Pid, User} | WaitingQueue],
+         io:format("WaitingQueue ~p~n", [WaitingQueue1]),
 
          if
             length(ActivePlayers) < MaxPlayers ->
@@ -35,9 +36,8 @@ roomMatch(ActivePlayers, WaitingQueue, MaxPlayers) ->
                   length(ActivePlayers1) == MaxPlayers ->
                      io:format("Opponents found~n", []),
                      matchInitialize(ActivePlayers1, maps:new(), [], maps:new()),
-                     roomMatch(ActivePlayers1, WaitingQueue, MaxPlayers);
+                     roomMatch(ActivePlayers1, WaitingQueue2, MaxPlayers);
                   true ->
-                     %io:format("Tamanho = ~s~n", [length(ActivePlayers1)]),
                      roomMatch(ActivePlayers1, WaitingQueue2, MaxPlayers)
                end;
             true ->
@@ -59,11 +59,9 @@ roomMatch(ActivePlayers, WaitingQueue, MaxPlayers) ->
                      matchInitialize(ActivePlayers1, maps:new(), [], maps:new()),
                      roomMatch(ActivePlayers1, WaitingQueue1, MaxPlayers);
                   true ->
-                     %io:format("Tamanho = ~s~n", [length(ActivePlayers1)]),
                      roomMatch(ActivePlayers1, WaitingQueue1, MaxPlayers)
                end
          end;
-         %roomMatch(ActivePlayers -- [{Pid, User}], WaitingQueue, MaxPlayers);
       {matchOver, Match} ->
          io:format("Match ~p is over~n", [Match]),
          roomMatch([], WaitingQueue, MaxPlayers)
@@ -398,7 +396,7 @@ match(PressedKeys, PlayersPids, MatchSender) ->
                end
          end;
 
-      {leave, _} ->
+      {leave, User, Pid} ->
          % Se um dos jogadores abandonar a partida, terminar a mesma
          MatchSender ! exit,
          match_manager ! {matchOver, self()}
@@ -421,9 +419,8 @@ matchSender(Match, PlayersPids, PidMatch, ScoresUpdated) ->
          {ok, Players} = maps:find(players, Match),
          Leaderboard = leaderboard(maps:to_list(Players), []),
          [Player ! {matchOver, Leaderboard, PidMatch} || Player <- PlayersPids],
-         score_manager ! {unfollowScores, self()},
+         score_manager ! {getScores, self()},
          done
-
       after
          50 -> Match1 = sendSimulation(Match, PlayersPids, PidMatch, ScoresUpdated),
          matchSender(Match1, PlayersPids, PidMatch, false)
@@ -444,19 +441,19 @@ updatePosition(X, Y, _, _, []) ->
 updatePosition(X, Y, Acc, Radius, [{K,true}|Keys]) ->
    case K of
       up ->
-         Y1 = Y - 1,
+         Y1 = Y - 2,
          Y2 = max(Y1, 0),
          X2 = X;
       down ->
-         Y1 = Y + 1,
+         Y1 = Y + 2,
          Y2 = min(Y1, 768),
          X2 = X;
       left ->
-         X1 = X - 1,
+         X1 = X - 2,
          X2 = max(X1, 0),
          Y2 = Y;
       right ->
-         X1 = X + 1,
+         X1 = X + 2,
          X2 = min(X1, 1366),
          Y2 = Y
    end,

@@ -67,12 +67,12 @@ newGame(Sock, User) ->
       Match;
     {tcp_closed, _} ->
       io:format("User ~s disconnected~n", [User]),
-      match_manager ! {leaveWaitMatch, User, self()},
-      logout(User);
+      logout(User),
+      match_manager ! {leaveWaitMatch, User, self()};
     {tcp_error, _, _} ->
       io:format("User ~s disconnected with error~n", [User]),
-      match_manager ! {leaveWaitMatch, User, self()},
-      logout(User)
+      logout(User),
+      match_manager ! {leaveWaitMatch, User, self()}
   end.
 
 %Funcao para gerir o jogo apos login validado
@@ -102,22 +102,23 @@ userInGame(Sock, Username, Match)->
 
           {tcp_closed, _} ->
             io:format("~s has disconnected~n", [Username]),
-            Match ! {leave, self()},
-            logout(Username);
+            logout(Username),
+            Match ! {leave, Username, self()};
 
           {tcp_error, _, _} ->
             io:format("~s left due to error~n", [Username]),
-            Match ! {leave, self()},
-            logout(Username)
+            logout(Username),
+            Match !  {leave, Username, self()}
+
         end
   end.
 
 matchOver(Sock, Username, Scoreboard) ->
-  gen_tcp:send(Sock, io_lib:format("MatchOverBegin~n", [])), %for debugging
+  gen_tcp:send(Sock, io_lib:format("MatchOverBegin~n", [])),
   Scores = maps:new(),
   maps:put(scores,Scoreboard, Scores),
   sendScores(Sock, Scores),
-  gen_tcp:send(Sock, io_lib:format("MatchOverEnd~n", [])), %for debugging
+  gen_tcp:send(Sock, io_lib:format("MatchOverEnd~n", [])),
   matchOverUserResponse(Sock, Username).
 
 matchOverUserResponse(Sock, Username) ->

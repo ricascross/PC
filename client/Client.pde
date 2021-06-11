@@ -644,7 +644,9 @@ void showMatchScreen() {
   ArrayList<Player> enemies = e.enemies;
   ArrayList<Creature> creatures = e.creatures;
   ArrayList<Score> bestScores = e.bestScores;
-
+  
+  System.out.println(enemies.size() + 1);
+  
   // Desenhar as entidades do jogo
   for (int i = 0; i < creatures.size(); i++)
     creatures.get(i).showCreature();
