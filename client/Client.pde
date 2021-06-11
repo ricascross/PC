@@ -454,7 +454,7 @@ void showMainMenu() {
     strokeWeight(3.5);
     stroke(255, 255, 0);
   }
-  fill(255, 60, 60);
+  fill(#269DC6);
   rect(width/2 - x/2, height/2 - y, x, y, 10);
   textSize(26);
   fill(255);
@@ -467,7 +467,7 @@ void showMainMenu() {
     strokeWeight(3.5);
     stroke(255, 255, 0);
   }
-  fill(60, 255, 60);
+  fill(#269DC6);
   rect(width/2 - x/2, height/2 + y, x, y, 10);
   fill(255);
   textAlign(CENTER, CENTER);
@@ -479,7 +479,7 @@ void showMainMenu() {
     strokeWeight(3.5);
     stroke(255, 255, 0);
   }
-  fill(249, 131, 34);
+  fill(#269DC6);
   rect(width/2 - x/2, height/2 + 3*y, x, y, 10);
   fill(255);
   textAlign(CENTER, CENTER);
@@ -491,7 +491,7 @@ void showMainMenu() {
     strokeWeight(3.5);
     stroke(255, 255, 0);
   }
-  fill(60, 60, 255);
+  fill(#269DC6);
   rect(width/2 - x/2, height/2 + 5*y, x, y, 10);
   fill(255);
   textAlign(CENTER, CENTER);
@@ -503,7 +503,7 @@ void showMainMenu() {
     strokeWeight(3.5);
     stroke(255, 255, 0);
   }
-  fill(130);
+  fill(#269DC6);
   rect(0.01*width, 0.9*height, x/2, y, 10);
   fill(255);
   textAlign(CENTER, CENTER);
@@ -518,14 +518,13 @@ void showLoginRegisterUnregisterScreen() {
   textSize(50);
   textAlign(CENTER,CENTER);
   if(loginMenu.get()) {
-    fill(255, 60, 60);
     fill(255);
     text("Login", width/2, height/5);
   } else if(registerMenu.get()) {
-    fill(60, 255, 60);
+    fill(255);
     text("Registo", width/2, height/5);
   } else if(unregisterMenu.get()) {
-    fill(249, 131, 34);
+    fill(255);
     text("Fechar conta", width/2, height/5);
   }
     
@@ -552,9 +551,9 @@ void showLoginRegisterUnregisterScreen() {
     strokeWeight(3.5);
     stroke(255, 255, 0);
   }
-  fill(255);
+  fill(#269DC6);
   rect(width/2 - x/2, height/2 + 3*y, x, y, 10);
-  fill(0);
+  fill(255);
   textAlign(CENTER, CENTER);
   text("Recuar", width/2, height/2 + 3*y + y/2 - 4);
 }
@@ -570,7 +569,7 @@ void showBestScoresScreen() {
   GameState e = state.get();
   ArrayList<Score> bestScores = e.bestScores;
   textSize(50);
-  fill(60, 60, 255);
+  fill(255);
   textAlign(CENTER, CENTER);
   text("Melhores pontuações", width/2, height/5);
   textSize(30);
@@ -585,9 +584,9 @@ void showBestScoresScreen() {
     strokeWeight(3.5);
     stroke(255, 255, 0);
   }
-  fill(255);
+  fill(#90B0B0);
   rect(width/2 - x/2, height/2 + 5*y, x, y, 10);
-  fill(0);
+  fill(255);
   textSize(24);
   textAlign(CENTER, CENTER);
   text("Recuar", width/2, height/2 + 5*y + y/2);
