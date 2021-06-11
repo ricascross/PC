@@ -70,7 +70,9 @@ void create_account(String username, String password) {
       if (answer.equals("Registered")) {
         message = "Bem-vindo "  + username;
         success.set(true);
-        onlineMenu.set(true);
+        //onlineMenu.set(true);
+        usrText = "";
+        mainMenu.set(true);
       } else if (answer.equals("UserExists")) {
         message = "Já existe um utilizador com esse nome!";
         usrText = "";
@@ -101,6 +103,7 @@ void close_account(String username, String password) {
       } else if (answer.equals("CloseAccountGoneWrong")) {
         message = "Erro ao fechar conta";
         success.set(false);
+        mainMenu.set(true);
       }
     } catch (Exception e) {}
   usrText = "";

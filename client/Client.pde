@@ -597,15 +597,15 @@ void showLeaderboardScreen() {
   GameState e = state.get();
   ArrayList<Score> leaderboard = e.leaderboard;
   textSize(50);
-  fill(0);
+  fill(255);
   textAlign(CENTER,CENTER);
   text("Leaderboard", width/2, height/5);
   textSize(40);
   for (int i = 0; i < leaderboard.size(); i++) {
     Score s = leaderboard.get(i);
-    fill(0);
+    fill(255);
     if (s.username.equals(e.player.getUsername()))
-      fill(0, 0, 255);
+      fill(255);
     text((i+1) + "º: " + s.username + " - " + s.score, width/2, height/2 + i*60 - 60);
   }
 

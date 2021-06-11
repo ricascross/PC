@@ -90,7 +90,7 @@ class Reader extends Thread {
                 if(p != null){
                   p.movement(x, y);
                   p.radius = r;
-                  p.score = score;
+                  p.setScore(score);
                 }
               }
             } else if (fields[0].equals("C")) {

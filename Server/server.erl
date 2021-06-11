@@ -25,8 +25,8 @@ roomMatch(ActivePlayers, WaitingQueue, MaxPlayers) ->
    receive
       {newPlayer, User, Pid} ->
          WaitingQueue1 = [{Pid, User} | WaitingQueue],
-         io:format("WaitingQueue ~p~n", [WaitingQueue1]),
-         io:format("ActivePlayers ~p~n", [ActivePlayers]),
+         %io:format("WaitingQueue ~p~n", [WaitingQueue1]),
+         %io:format("ActivePlayers ~p~n", [ActivePlayers]),
          if
             length(ActivePlayers) < MaxPlayers ->
                io:format("User ~s wants to play. Waiting for opponent...~n", [User]),
@@ -46,10 +46,10 @@ roomMatch(ActivePlayers, WaitingQueue, MaxPlayers) ->
          end;
       {leaveWaitMatch, User, Pid} ->
          io:format("User ~s left server~n", [User]),
-         roomMatch(ActivePlayers -- [{Pid, User}], WaitingQueue, MaxPlayers);
-      {matchOver, Match} ->
-         %io:format("Match ~p is over~n", [Match]),
-         roomMatch([], WaitingQueue, MaxPlayers)
+         roomMatch(ActivePlayers -- [{Pid, User}], WaitingQueue, MaxPlayers)%;
+      %{matchOver, Match} ->
+      %   %io:format("Match ~p is over~n", [Match]),
+      %   roomMatch([], WaitingQueue, MaxPlayers)
    end.
 
 %Função para garantir que não há sobreposição de spawns de criaturas/jogadores ao começar
@@ -249,7 +249,7 @@ updatePlayers(Players, [{Pid, Change}|T], DeadPlayers, Res) ->
    {ok, BestScore} = maps:find(bestScore, Player),
    NewPlayer1 = maps:put(radius, PlayerRadius + Change, Player),
    {ok, R} = maps:find(radius, NewPlayer1),
-   NewScore = math:pi() * R * R,
+   NewScore = 5 * math:pi() * R * R,
    %io:format("Username: ~p~n",[Username]),
    %io:format("NewScore: ~p~n",[NewScore]),
    %Teste = score_manager ! {newScore, {Username, NewScore}},
@@ -402,10 +402,10 @@ matchSender(Match, PlayersPids, PidMatch, ScoresUpdated) ->
       {exit, User, Pid} ->
          {ok, Players} = maps:find(players, Match),
          Leaderboard = leaderboard(maps:to_list(Players), []),
-         io:format("Leaderboard~p~n",[Leaderboard]),
+         %io:format("Leaderboard~p~n",[Leaderboard]),
          [Player ! {matchOver, Leaderboard, PidMatch} || Player <- PlayersPids],
-         score_manager ! {getScores, self()},
-         match_manager ! {leaveWaitMatch, User, Pid},
+         %score_manager ! {getScores, self()},
+         %match_manager ! {leaveWaitMatch, User, Pid},
          done
       after
          30 -> Match1 = sendSimulation(Match, PlayersPids, PidMatch, ScoresUpdated),

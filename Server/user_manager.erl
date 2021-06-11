@@ -15,7 +15,7 @@ userAuth(Sock) ->
           case Res of
             account_created ->
               gen_tcp:send(Sock, io_lib:format("Registered~n", [])),
-              userInGame(Sock, User, newGame(Sock, User));
+              userAuth(Sock);
 
             user_exists ->
               gen_tcp:send(Sock, io_lib:format("UserExists~n", [])),
@@ -119,8 +119,10 @@ userInGame(Sock, Username, Match)->
 matchOver(Sock, Username, Scoreboard) ->
   gen_tcp:send(Sock, io_lib:format("MatchOverBegin~n", [])),
   Scores = maps:new(),
-  maps:put(scores,Scoreboard, Scores),
-  sendScores(Sock, Scores),
+  io:format("ScoreBoard no user_manager~p~n",[Scoreboard]),
+  Scores1 = maps:put(scores,Scoreboard, Scores),
+  io:format("Scores no user_manager~p~n",[Scores1]),
+  sendScores(Sock, Scores1),
   gen_tcp:send(Sock, io_lib:format("MatchOverEnd~n", [])),
   matchOverUserResponse(Sock, Username).
 

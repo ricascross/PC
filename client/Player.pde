@@ -55,8 +55,12 @@ class Player implements Comparable{
     return this.username;
   }
   
-  float getScore(){
+  synchronized float getScore(){
     return this.score;
+  }
+  
+  synchronized void setScore(float s){
+    this.score = s;
   }
 
   boolean getEnemy() {
@@ -90,7 +94,7 @@ class Player implements Comparable{
     else
       fill(0, 0, 255);
     textAlign(CENTER, CENTER);
-    text(this.score, position.x, position.y);
+    text(this.getScore(), position.x, position.y);
   }
   
   void showNormal() {
@@ -115,7 +119,7 @@ class Player implements Comparable{
     textSize(this.radius/3);
     fill(255);
     textAlign(CENTER, CENTER);
-    text(this.score, position.x, position.y);
+    text(this.getScore(), position.x, position.y);
   }
   
   void show() {
