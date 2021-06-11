@@ -15,6 +15,7 @@ userAuth(Sock) ->
           case Res of
             account_created ->
               gen_tcp:send(Sock, io_lib:format("Registered~n", [])),
+              match_manager ! {newPlayer, User, self()},
               userAuth(Sock);
 
             user_exists ->
@@ -63,11 +64,10 @@ userAuth(Sock) ->
 
 % Função que devolve uma partida nova
 newGame(Sock, User) ->
-  match_manager ! {newPlayer, User, self()},
+  match_manager ! {login, User, self()},
   receive
     {initialMatch, MatchInfo, Match, match_manager} ->
       initialInfo(Sock, MatchInfo),
-      io:format("Match no user_manager: ~p~n",[Match]),
       Match;
 
     {tcp_closed, _} ->
@@ -119,9 +119,7 @@ userInGame(Sock, Username, Match)->
 matchOver(Sock, Username, Scoreboard) ->
   gen_tcp:send(Sock, io_lib:format("MatchOverBegin~n", [])),
   Scores = maps:new(),
-  io:format("ScoreBoard no user_manager~p~n",[Scoreboard]),
   Scores1 = maps:put(scores,Scoreboard, Scores),
-  io:format("Scores no user_manager~p~n",[Scores1]),
   sendScores(Sock, Scores1),
   gen_tcp:send(Sock, io_lib:format("MatchOverEnd~n", [])),
   matchOverUserResponse(Sock, Username).
@@ -133,6 +131,7 @@ matchOverUserResponse(Sock, Username) ->
       Info = string:split(Info_without_newline,",",all),
       case Info of
         ["Continue"] ->
+          match_manager ! {continue , Username, self()},
           userInGame(Sock, Username, newGame(Sock, Username));
         ["Quit"] ->
           logout(Username),

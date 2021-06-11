@@ -7,11 +7,10 @@
 start() -> server(4321).
 
 server(Port)->
-   register(match_manager, spawn(fun() -> roomMatch([], [], 2) end)),
+   register(match_manager, spawn(fun() -> roomMatch([], [], 3) end)),
    register(login_manager, start_login()),
    register(score_manager, spawn(fun() -> scoreBoard([], self()) end)),
    {ok, LSock} = gen_tcp:listen(Port, [binary, {packet, line}, {reuseaddr, true}]),
-   %{ok, Sock} = gen_tcp:connect({193,136,19,153}, 4321, [binary, {active,true}]),
    io:format("Servidor pronto.~n", []),
    acceptor(LSock).
 
@@ -24,9 +23,12 @@ acceptor(LSock) ->
 roomMatch(ActivePlayers, WaitingQueue, MaxPlayers) ->
    receive
       {newPlayer, User, Pid} ->
-         WaitingQueue1 = [{Pid, User} | WaitingQueue],
-         %io:format("WaitingQueue ~p~n", [WaitingQueue1]),
-         %io:format("ActivePlayers ~p~n", [ActivePlayers]),
+         io:format("WaitingQueue ~p~n", [WaitingQueue]),
+         io:format("ActivePlayers ~p~n", [ActivePlayers]),
+         roomMatch(ActivePlayers,WaitingQueue,MaxPlayers);
+
+      {login, User, Pid} ->
+         WaitingQueue1 = WaitingQueue ++ [{Pid, User}],
          if
             length(ActivePlayers) < MaxPlayers ->
                io:format("User ~s wants to play. Waiting for opponent...~n", [User]),
@@ -42,18 +44,39 @@ roomMatch(ActivePlayers, WaitingQueue, MaxPlayers) ->
                      roomMatch(ActivePlayers1, WaitingQueue2, MaxPlayers)
                end;
             true ->
+               roomMatch(ActivePlayers, WaitingQueue1, MaxPlayers)
+         end;
+
+      {continue, Username, Pid} ->
+         io:format("Entrou no continue no server~n",[]),
+         io:format("WaitingQueue ~p~n", [WaitingQueue]),
+         io:format("ActivePlayers ~p~n", [ActivePlayers]),
+         if
+            length(WaitingQueue) > 0 ->
+               Player = lists:nth(1,WaitingQueue),
+               WaitingQueue1 = lists:delete(Player, WaitingQueue),
+               ActivePlayers1 = [ Player | ActivePlayers],
+               io:format("WaitingQueue1 ~p~n", [WaitingQueue1]),
+               io:format("ActivePlayers1 ~p~n", [ActivePlayers1]),
+               if
+                  length(ActivePlayers1) == MaxPlayers ->
+                     io:format("Opponents found~n", []),
+                     matchInitialize(ActivePlayers1, maps:new(), [], maps:new()),
+                     roomMatch(ActivePlayers1, WaitingQueue1, MaxPlayers);
+                  true ->
+                     roomMatch(ActivePlayers1, WaitingQueue1, MaxPlayers)
+               end;
+            true ->
                roomMatch(ActivePlayers, WaitingQueue, MaxPlayers)
          end;
+         %roomMatch(ActivePlayers,WaitingQueue,MaxPlayers);
+
       {leaveWaitMatch, User, Pid} ->
          io:format("User ~s left server~n", [User]),
-         roomMatch(ActivePlayers -- [{Pid, User}], WaitingQueue, MaxPlayers)%;
-      %{matchOver, Match} ->
-      %   %io:format("Match ~p is over~n", [Match]),
-      %   roomMatch([], WaitingQueue, MaxPlayers)
+         roomMatch(ActivePlayers -- [{Pid, User}], WaitingQueue, MaxPlayers)
    end.
 
 %Função para garantir que não há sobreposição de spawns de criaturas/jogadores ao começar
-
 checkPosition(_, _, _, []) ->
    true;
 checkPosition(X, Y, Radius, [{_,Player} | Players]) ->
@@ -381,7 +404,6 @@ match(PressedKeys, PlayersPids, MatchSender) ->
          end;
 
       {leave, User, Pid} ->
-         % Se um dos jogadores abandonar a partida, terminar a mesma
          MatchSender ! {exit, User, Pid}
          %match_manager ! {matchOver, self()}
    end.
@@ -392,6 +414,7 @@ matchSender(Match, PlayersPids, PidMatch, ScoresUpdated) ->
       {scores, Scores} ->
          Match1 = maps:update(scores, Scores, Match),
          matchSender(Match1, PlayersPids, PidMatch, true);
+
       {Pid, PressedKeys} ->
          {ok, Players} = maps:find(players, Match),
          {ok, Player} = maps:find(Pid, Players),
@@ -399,13 +422,13 @@ matchSender(Match, PlayersPids, PidMatch, ScoresUpdated) ->
          Players1 = maps:update(Pid, Player1, Players),
          Match1 = maps:update(players, Players1, Match),
          matchSender(Match1, PlayersPids, PidMatch, ScoresUpdated);
+
       {exit, User, Pid} ->
          {ok, Players} = maps:find(players, Match),
          Leaderboard = leaderboard(maps:to_list(Players), []),
-         %io:format("Leaderboard~p~n",[Leaderboard]),
          [Player ! {matchOver, Leaderboard, PidMatch} || Player <- PlayersPids],
          %score_manager ! {getScores, self()},
-         %match_manager ! {leaveWaitMatch, User, Pid},
+         match_manager ! {leaveWaitMatch, User, Pid},
          done
       after
          30 -> Match1 = sendSimulation(Match, PlayersPids, PidMatch, ScoresUpdated),
