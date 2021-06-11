@@ -16,6 +16,7 @@ userAuth(Sock) ->
             account_created ->
               gen_tcp:send(Sock, io_lib:format("Registered~n", [])),
               userInGame(Sock, User, newGame(Sock, User));
+
             user_exists ->
               gen_tcp:send(Sock, io_lib:format("UserExists~n", [])),
               userAuth(Sock)
@@ -36,9 +37,11 @@ userAuth(Sock) ->
             login_done ->
               gen_tcp:send(Sock, io_lib:format("LoginDone~n", [])),
               userInGame(Sock, User, newGame(Sock, User));
+
             already_logged_in ->
               gen_tcp:send(Sock, io_lib:format("AlreadyLoggedIn~n", [])),
               userAuth(Sock);
+
             login_invalid ->
               gen_tcp:send(Sock, io_lib:format("LoginInvalid~n", [])),
               userAuth(Sock)
@@ -64,11 +67,14 @@ newGame(Sock, User) ->
   receive
     {initialMatch, MatchInfo, Match, match_manager} ->
       initialInfo(Sock, MatchInfo),
+      io:format("Match no user_manager: ~p~n",[Match]),
       Match;
+
     {tcp_closed, _} ->
       io:format("User ~s disconnected~n", [User]),
       logout(User),
       match_manager ! {leaveWaitMatch, User, self()};
+
     {tcp_error, _, _} ->
       io:format("User ~s disconnected with error~n", [User]),
       logout(User),
@@ -80,37 +86,34 @@ userInGame(Sock, Username, Match)->
   receive
     {matchOver, ScoreBoard, Match} ->
       matchOver(Sock,Username,ScoreBoard)
+  after 0 ->
+      receive
+        {matchOver, ScoreBoard, Match} ->
+          matchOver(Sock,Username,ScoreBoard);
 
-    after
-      0 ->
-        receive
-          {matchOver, ScoreBoard, Match} ->
-            matchOver(Sock,Username,ScoreBoard);
+        {updateMatch, UpdateInfo, Match} ->
+          sendUpdateInfo(Sock, UpdateInfo),
+          userInGame(Sock,Username,Match);
 
-          {updateMatch, UpdateInfo, Match} ->
-            sendUpdateInfo(Sock, UpdateInfo),
-            userInGame(Sock,Username,Match);
+        {tcp, _, Data} ->
+          Info_without_newline = re:replace(Data,"\\n|\\r", "",[global,{return,list}]),
+          Info = string:split(Info_without_newline,",",all),
+          case Info of
+          ["KeyChanged", Key, "True"] -> match_manager ! {keyChanged, Key, true, self()};
+          ["KeyChanged", Key, "False"] -> match_manager ! {keyChanged, Key, false, self()}
+          end,
+          userInGame(Sock,Username,Match);
 
-          {tcp, _, Data} ->
-            Info_without_newline = re:replace(Data,"\\n|\\r", "",[global,{return,list}]),
-            Info = string:split(Info_without_newline,",",all),
-            case Info of
-              ["KeyChanged", Key, "True"] -> Match ! {keyChanged, Key, true, self()};
-              ["KeyChanged", Key, "False"] -> Match ! {keyChanged, Key, false, self()}
-            end,
-            userInGame(Sock,Username,Match);
+        {tcp_closed, _} ->
+          io:format("~s has disconnected user_manager~n", [Username]),
+          logout(Username),
+          match_manager ! {leave, Username, self()};
 
-          {tcp_closed, _} ->
-            io:format("~s has disconnected~n", [Username]),
-            logout(Username),
-            Match ! {leave, Username, self()};
-
-          {tcp_error, _, _} ->
-            io:format("~s left due to error~n", [Username]),
-            logout(Username),
-            Match !  {leave, Username, self()}
-
-        end
+        {tcp_error, _, _} ->
+          io:format("~s left due to error user_manager~n", [Username]),
+          logout(Username),
+          match_manager ! {leave, Username, self()}
+      end
   end.
 
 matchOver(Sock, Username, Scoreboard) ->
