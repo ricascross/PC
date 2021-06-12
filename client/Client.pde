@@ -334,9 +334,9 @@ void showOnlineMenu() {
       strokeWeight(3.5);
       stroke(255, 255, 0);
     }
-    fill(60, 255, 60);
+    fill(#90B0B0);
     rect(width/2 - x/2, height/2 + y, x, y, 10);
-    fill(0);
+    fill(255);
     textAlign(CENTER, CENTER);
     text("Escolher skin", width/2, height/2 + y + y/2);
   }
