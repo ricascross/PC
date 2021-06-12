@@ -25,7 +25,7 @@ scoreBoard(Scores, Pid) ->
                   NewScore = Scores
               end;
             _ ->
-              NewScore = Scores,
+              NewScore = updateTopScoreBoard({User, Score}, Scores),
               sendTopScoreBoard(NewScore, Pid)
           end;
 
@@ -50,9 +50,9 @@ sendTopScoreBoard(Scores, Receiver) ->
 % Função que adiciona uma pontuação à lista das melhores pontuações
 updateTopScoreBoard(Score, []) ->
   [Score];
-updateTopScoreBoard({User, Score1}, [_, Score2 | _] = Scores) when Score1 > Score2 ->
+updateTopScoreBoard({User, Score1}, [{_, Score2} | _] = Scores) when Score1 > Score2 ->
   [{User, Score1} | Scores];
-updateTopScoreBoard({User1, Score1}, [User2, Score2 | T] = _) when Score1 =< Score2 ->
+updateTopScoreBoard({User1, Score1}, [{User2, Score2} | T] = _) when Score1 =< Score2 ->
   [{User2, Score2} | updateTopScoreBoard({User1, Score1}, T)].
 
 

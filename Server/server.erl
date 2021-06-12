@@ -307,9 +307,10 @@ updatePlayers(Players, [{Pid, Change}|T], DeadPlayers, Res) ->
    %io:format("Username: ~p~n",[Username]),
    %io:format("NewScore: ~p~n",[NewScore]),
    %Teste = score_manager ! {newScore, {Username, NewScore}},
-   score_manager ! {newScore, {Username, NewScore}},
+   score_manager ! {newScore, {Username, NewScore}, Pid},
    %io:format("NewScore: ~p~n",[Teste]),
    NewPlayer2 = maps:put(score, NewScore, NewPlayer1),
+   %io:format("NewPlayer2: ~p~n", [NewPlayer2]),
    if
       NewScore > BestScore ->
          NewPlayer3 = maps:put(bestScore, NewScore, NewPlayer2);
@@ -358,14 +359,16 @@ matchInitialize([], Players, Pids, PressedKeys) ->
       score_manager ! {getScores, self()},
       receive
          {scores, Scores} ->
-            Creatures = createCreature(poison, 50, maps:to_list(Players), []) ++ createCreature(food, 50, maps:to_list(Players), []),
-            Info = maps:new(),
-            Info1 = maps:put(players,Players, Info),
-            Info2 = maps:put(creatures,Creatures, Info1),
-            Match = maps:put(scores,Scores, Info2),
-            [Player ! {initialMatch, Match, PidMatch, match_manager} || Player <- Pids],
-            matchSender(Match, Pids, PidMatch, false)
-      end
+            Scores
+      end,
+      io:format("Scores entrou no matchInitialize~n"),
+      Creatures = createCreature(poison, 50, maps:to_list(Players), []) ++ createCreature(food, 50, maps:to_list(Players), []),
+      Info = maps:new(),
+      Info1 = maps:put(players,Players, Info),
+      Info2 = maps:put(creatures,Creatures, Info1),
+      Match = maps:put(scores,Scores, Info2),
+      [Player ! {initialMatch, Match, PidMatch, match_manager} || Player <- Pids],
+      matchSender(Match, Pids, PidMatch, false)
                        end),
    match(PressedKeys, Pids, MatchSender);
 matchInitialize([{Pid, Username}|T], Players, Pids, PressedKeys) ->
@@ -443,6 +446,7 @@ match(PressedKeys, PlayersPids, MatchSender) ->
 matchSender(Match, PlayersPids, PidMatch, ScoresUpdated) ->
    receive
       {scores, Scores} ->
+         io:format("Scores entrou no Match Sender"),
          Match1 = maps:update(scores, Scores, Match),
          matchSender(Match1, PlayersPids, PidMatch, true);
 
@@ -457,8 +461,10 @@ matchSender(Match, PlayersPids, PidMatch, ScoresUpdated) ->
       {exit, User, Pid} ->
          {ok, Players} = maps:find(players, Match),
          Leaderboard = leaderboard(maps:to_list(Players), []),
+         io:format("Leaderboard: ~p~n", [Leaderboard]),
          [Player ! {matchOver, Leaderboard, PidMatch} || Player <- PlayersPids],
          %score_manager ! {getScores, self()},
+         %[score_manager ! {newScore, {Username,Score}} || {Username, Score} <- Leaderboard],
          match_manager ! {leaveWaitMatch, User, Pid},
          done
       after

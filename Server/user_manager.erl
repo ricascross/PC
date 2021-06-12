@@ -50,12 +50,30 @@ userAuth(Sock) ->
 
         ["logout", User] ->
           Res = logout(User),
+          io:format("Res logout user manager~p~n",[Res]),
           case Res of
             logout_done ->
               gen_tcp:send(Sock, io_lib:format("LogoutDone~n", []));
             logout_invalid ->
               gen_tcp:send(Sock, io_lib:format("LogoutInvalid~n", []))
           end;
+
+        ["Scores"] ->
+          score_manager ! {getScores, self()},
+
+          receive
+            {scores, Scores} ->
+              gen_tcp:send(Sock, io_lib:format("BeginScores~n", [])),
+              ScoresInfo = maps:new(),
+              ScoresInfo2 = maps:put(scores,Scores, ScoresInfo),
+              io:format("Scores Info: ~p~n", [ScoresInfo2]),
+              sendScores(Sock, ScoresInfo2),
+              gen_tcp:send(Sock, io_lib:format("EndScores~n", []));
+
+            _ ->
+              gen_tcp:send(Sock, io_lib:format("ScoresInvalid~n", []))
+          end,
+          userAuth(Sock);
 
         _ ->
           self() ! gen_tcp:send(Sock, io_lib:format("InvalidCommand~n", []))
@@ -72,12 +90,22 @@ newGame(Sock, User) ->
 
     {tcp_closed, _} ->
       io:format("User ~s disconnected~n", [User]),
-      logout(User),
+      %logout(User),
+      login_manager ! {{logout, User},self()},
+      receive
+        _ ->
+          io:format("Logout TCP CLOSED")
+      end,
       match_manager ! {leaveWaitMatch, User, self()};
 
     {tcp_error, _, _} ->
       io:format("User ~s disconnected with error~n", [User]),
-      logout(User),
+      %logout(User),
+      login_manager ! {{logout, User},self()},
+      receive
+        _ ->
+          io:format("Logout TCP error")
+      end,
       match_manager ! {leaveWaitMatch, User, self()}
   end.
 
@@ -106,12 +134,23 @@ userInGame(Sock, Username, Match)->
 
         {tcp_closed, _} ->
           io:format("~s has disconnected user_manager~n", [Username]),
-          logout(Username),
+          %logout(Username),
+          login_manager ! {{logout, Username},self()},
+          receive
+            _ ->
+              io:format("Logout TCP CLOSED")
+          end,
+
           match_manager ! {leave, Username, self()};
 
         {tcp_error, _, _} ->
           io:format("~s left due to error user_manager~n", [Username]),
-          logout(Username),
+          %logout(Username),
+          login_manager ! {{logout, _},self()},
+          receive
+            _ ->
+              io:format("Logout TCP EROR")
+          end,
           match_manager ! {leave, Username, self()}
       end
   end.
@@ -135,7 +174,12 @@ matchOverUserResponse(Sock, Username) ->
           match_manager ! {continue , Username, self()},
           userInGame(Sock, Username, newGame(Sock, Username));
         ["Quit"] ->
-          logout(Username),
+          %logout(Username),
+          login_manager ! {{logout, Username},self()},
+          receive
+            _ ->
+              io:format("Logout GAME")
+          end,
           match_manager ! {leaveWaitMatch, Username, self()},
           userAuth(Sock);
         _ ->
@@ -144,12 +188,18 @@ matchOverUserResponse(Sock, Username) ->
       end;
 
     {tcp_close, _} ->
+      logout(Username),
       match_manager ! {leaveWaitMatch, Username, self()},
-      logout(Username);
+      login_manager ! {{logout, Username},self()},
+      receive
+        _ ->
+          io:format("Logout TCP CLOSED")
+      end;
 
     {tcp_error, _, _} ->
+      logout(Username),
       match_manager ! {leaveWaitMatch, Username, self()},
-      logout(Username)
+
   end.
 
 initialInfo(Sock, MatchInfo) ->
