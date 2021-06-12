@@ -16,7 +16,7 @@ Thread reader = null;
 // Objeto que guarda toda a informação da partida atual
 GameState state = new GameState();
 
-AtomicBoolean mainMenu = new AtomicBoolean(true), loginMenu = new AtomicBoolean(false), registerMenu = new AtomicBoolean(false), unregisterMenu = new AtomicBoolean(false), waitMatch = new AtomicBoolean(false), leaderboardMenu = new AtomicBoolean(false), matchMenu = new AtomicBoolean(false), bestScoresMenu = new AtomicBoolean(false), messageMenu = new AtomicBoolean(false), selectionMenu = new AtomicBoolean(false), onlineMenu = new AtomicBoolean(false), optionsMenu = new AtomicBoolean(false);
+AtomicBoolean mainMenu = new AtomicBoolean(true), loginMenu = new AtomicBoolean(false), logoutMenu = new AtomicBoolean(false), registerMenu = new AtomicBoolean(false), unregisterMenu = new AtomicBoolean(false), waitMatch = new AtomicBoolean(false), leaderboardMenu = new AtomicBoolean(false), matchMenu = new AtomicBoolean(false), bestScoresMenu = new AtomicBoolean(false), messageMenu = new AtomicBoolean(false), selectionMenu = new AtomicBoolean(false), onlineMenu = new AtomicBoolean(false), optionsMenu = new AtomicBoolean(false);
 AtomicBoolean usr = new AtomicBoolean(true), pwd = new AtomicBoolean(false), success = new AtomicBoolean(false), showScores = new AtomicBoolean(false);
 AtomicBoolean iconsOn = new AtomicBoolean(false);
 
@@ -223,6 +223,8 @@ void keyPressed() {
               create_account(usrText, pwdText);
           } else if(unregisterMenu.get()) {            
               close_account(usrText, pwdText);
+          }else if(logoutMenu.get()){
+            logout(usrText);
           }
         } else
             pwdText = getChar(pwdText);
@@ -317,10 +319,10 @@ void showOnlineMenu() {
     strokeWeight(3.5);
     stroke(255, 255, 0);
   }
-  fill(255, 60, 60);
+  fill(#90B0B0);
   rect(width/2 - x/2, height/2 - y, x, y, 10);
   textSize(24);
-  fill(0);
+  fill(255);
   textAlign(CENTER, CENTER);
   text("Jogar", width/2, height/2 - y/2);
 
@@ -341,7 +343,7 @@ void showOnlineMenu() {
 
 void showSelectionMenu() {
   textSize(50);
-  fill(0);
+  fill(255);
   textAlign(CENTER,CENTER);
   text("Escolher skin", width/2, height/7);
 
@@ -454,7 +456,7 @@ void showMainMenu() {
     strokeWeight(3.5);
     stroke(255, 255, 0);
   }
-  fill(#269DC6);
+  fill(#90B0B0);
   rect(width/2 - x/2, height/2 - y, x, y, 10);
   textSize(26);
   fill(255);
@@ -467,7 +469,7 @@ void showMainMenu() {
     strokeWeight(3.5);
     stroke(255, 255, 0);
   }
-  fill(#269DC6);
+  fill(#90B0B0);
   rect(width/2 - x/2, height/2 + y, x, y, 10);
   fill(255);
   textAlign(CENTER, CENTER);
@@ -479,7 +481,7 @@ void showMainMenu() {
     strokeWeight(3.5);
     stroke(255, 255, 0);
   }
-  fill(#269DC6);
+  fill(#90B0B0);
   rect(width/2 - x/2, height/2 + 3*y, x, y, 10);
   fill(255);
   textAlign(CENTER, CENTER);
@@ -491,7 +493,7 @@ void showMainMenu() {
     strokeWeight(3.5);
     stroke(255, 255, 0);
   }
-  fill(#269DC6);
+  fill(#90B0B0);
   rect(width/2 - x/2, height/2 + 5*y, x, y, 10);
   fill(255);
   textAlign(CENTER, CENTER);
@@ -503,7 +505,7 @@ void showMainMenu() {
     strokeWeight(3.5);
     stroke(255, 255, 0);
   }
-  fill(#269DC6);
+  fill(#90B0B0);
   rect(0.01*width, 0.9*height, x/2, y, 10);
   fill(255);
   textAlign(CENTER, CENTER);
@@ -551,7 +553,7 @@ void showLoginRegisterUnregisterScreen() {
     strokeWeight(3.5);
     stroke(255, 255, 0);
   }
-  fill(#269DC6);
+  fill(#90B0B0);
   rect(width/2 - x/2, height/2 + 3*y, x, y, 10);
   fill(255);
   textAlign(CENTER, CENTER);
@@ -560,7 +562,7 @@ void showLoginRegisterUnregisterScreen() {
 
 void showWaitMatchScreen() {
   textSize(32);
-  fill(255, 0, 0);
+  fill(255);
   textAlign(CENTER,CENTER);
   text("À espera de adversários...", width/2, height/2);
 }
@@ -614,9 +616,9 @@ void showLeaderboardScreen() {
     strokeWeight(3.5);
     stroke(255, 255, 0);
   }
-  fill(255, 60, 60);
+  fill(#90B0B0);
   rect(width/2 - x - x/5, height/2 + 3*y, x, y, 10);
-  fill(0);
+  fill(255);
   textSize(24);
   text("Sair", width/2 - x/2 - x/5, height/2 + 3*y + y/2);
 
@@ -626,9 +628,9 @@ void showLeaderboardScreen() {
     strokeWeight(3.5);
     stroke(255, 255, 0);
   }
-  fill(60, 255, 60);
+  fill(#90B0B0);
   rect(width/2 + x/5, height/2 + 3*y, x, y, 10);
-  fill(0);
+  fill(255);
   textSize(24);
   text("Continuar", width/2 + x/2 + x/5, height/2 + 3*y + y/2);
 }

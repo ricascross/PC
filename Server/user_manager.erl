@@ -122,6 +122,7 @@ matchOver(Sock, Username, Scoreboard) ->
   Scores1 = maps:put(scores,Scoreboard, Scores),
   sendScores(Sock, Scores1),
   gen_tcp:send(Sock, io_lib:format("MatchOverEnd~n", [])),
+  match_manager ! {leaveWaitMatch, Username, self()},
   matchOverUserResponse(Sock, Username).
 
 matchOverUserResponse(Sock, Username) ->
@@ -135,6 +136,7 @@ matchOverUserResponse(Sock, Username) ->
           userInGame(Sock, Username, newGame(Sock, Username));
         ["Quit"] ->
           logout(Username),
+          match_manager ! {leaveWaitMatch, Username, self()},
           userAuth(Sock);
         _ ->
           gen_tcp:send(Sock,io_lib:format("UnknownResponse~n", [])),
@@ -142,9 +144,11 @@ matchOverUserResponse(Sock, Username) ->
       end;
 
     {tcp_close, _} ->
+      match_manager ! {leaveWaitMatch, Username, self()},
       logout(Username);
 
     {tcp_error, _, _} ->
+      match_manager ! {leaveWaitMatch, Username, self()},
       logout(Username)
   end.
 

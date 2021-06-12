@@ -34,7 +34,7 @@ roomMatch(ActivePlayers, WaitingQueue, MaxPlayers) ->
                io:format("User ~s wants to play. Waiting for opponent...~n", [User]),
                Player = lists:nth(1,WaitingQueue1),
                WaitingQueue2 = lists:delete(Player, WaitingQueue1),
-               ActivePlayers1 = [ Player | ActivePlayers],
+               ActivePlayers1 = lists:umerge(ActivePlayers,[Player]),
                if
                   length(ActivePlayers1) == MaxPlayers ->
                      io:format("Opponents found~n", []),
@@ -47,29 +47,30 @@ roomMatch(ActivePlayers, WaitingQueue, MaxPlayers) ->
                roomMatch(ActivePlayers, WaitingQueue1, MaxPlayers)
          end;
 
-      {continue, Username, Pid} ->
+      {continue, User, Pid} ->
          io:format("Entrou no continue no server~n",[]),
-         io:format("WaitingQueue ~p~n", [WaitingQueue]),
-         io:format("ActivePlayers ~p~n", [ActivePlayers]),
+         WaitingQueue1 = lists:umerge(WaitingQueue,[{Pid, User}]),
+         ActivePlayers1 = lists:delete({Pid,User},ActivePlayers),
+         io:format("WaitingQueue1 ~p~n", [WaitingQueue1]),
+         io:format("ActivePlayers1 ~p~n", [ActivePlayers1]),
          if
-            length(WaitingQueue) > 0 ->
-               Player = lists:nth(1,WaitingQueue),
-               WaitingQueue1 = lists:delete(Player, WaitingQueue),
-               ActivePlayers1 = [ Player | ActivePlayers],
-               io:format("WaitingQueue1 ~p~n", [WaitingQueue1]),
-               io:format("ActivePlayers1 ~p~n", [ActivePlayers1]),
+            length(WaitingQueue1) > 0 ->
+               Player = lists:nth(1,WaitingQueue1),
+               WaitingQueue2 = lists:delete(Player, WaitingQueue1),
+               ActivePlayers2 = lists:umerge(ActivePlayers1,[Player]),
+               io:format("WaitingQueue2 ~p~n", [WaitingQueue2]),
+               io:format("ActivePlayers2 ~p~n", [ActivePlayers2]),
                if
-                  length(ActivePlayers1) == MaxPlayers ->
+                  length(ActivePlayers2) == MaxPlayers ->
                      io:format("Opponents found~n", []),
-                     matchInitialize(ActivePlayers1, maps:new(), [], maps:new()),
-                     roomMatch(ActivePlayers1, WaitingQueue1, MaxPlayers);
+                     matchInitialize(ActivePlayers2, maps:new(), [], maps:new()),
+                     roomMatch(ActivePlayers2, WaitingQueue2, MaxPlayers);
                   true ->
-                     roomMatch(ActivePlayers1, WaitingQueue1, MaxPlayers)
+                     roomMatch(ActivePlayers2, WaitingQueue2, MaxPlayers)
                end;
             true ->
-               roomMatch(ActivePlayers, WaitingQueue, MaxPlayers)
+               roomMatch(ActivePlayers1, WaitingQueue1, MaxPlayers)
          end;
-         %roomMatch(ActivePlayers,WaitingQueue,MaxPlayers);
 
       {leaveWaitMatch, User, Pid} ->
          io:format("User ~s left server~n", [User]),
