@@ -299,13 +299,8 @@ updatePlayers(Players, [{Pid, Change}|T], DeadPlayers, Res) ->
    NewPlayer1 = maps:put(radius, PlayerRadius + Change, Player),
    {ok, R} = maps:find(radius, NewPlayer1),
    NewScore = 5 * math:pi() * R * R,
-   %io:format("Username: ~p~n",[Username]),
-   %io:format("NewScore: ~p~n",[NewScore]),
-   %Teste = score_manager ! {newScore, {Username, NewScore}},
    score_manager ! {newScore, {Username, NewScore}},
-   %io:format("NewScore: ~p~n",[Teste]),
    NewPlayer2 = maps:put(score, NewScore, NewPlayer1),
-   %io:format("NewPlayer2: ~p~n", [NewPlayer2]),
    if
       NewScore > BestScore ->
          NewPlayer3 = maps:put(bestScore, NewScore, NewPlayer2);
@@ -440,7 +435,6 @@ match(PressedKeys, PlayersPids, MatchSender) ->
 matchSender(Match, PlayersPids, PidMatch, ScoresUpdated) ->
    receive
       {scores, Scores} ->
-         io:format("Scores entrou no Match Sender"),
          Match1 = maps:update(scores, Scores, Match),
          matchSender(Match1, PlayersPids, PidMatch, true);
 

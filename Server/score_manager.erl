@@ -9,7 +9,6 @@ scoreBoard(Scores, Pid) ->
       scoreBoard(Scores, Pid);
 
     {newScore, {User, Score}} ->
-      io:format("Entrou no newScore~n",[]),
       case lists:filter(fun({Username, _}) -> Username == User end, Scores) of
 
         [] ->
@@ -40,8 +39,6 @@ scoreBoard(Scores, Pid) ->
 
 %Função que envia as novas melhores pontuações a quem pretende recebê-las
 sendTopScoreBoard(Scores, Receiver) ->
-  io:format("Receiver no sendTopScoreBoard ~p~n",[Receiver]),
-  io:format("Scores no sendTopScoreBoard ~p~n",[Scores]),
   Receiver ! {scores, Scores}.
 
 % Função que adiciona uma pontuação à lista das melhores pontuações

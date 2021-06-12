@@ -50,7 +50,6 @@ userAuth(Sock) ->
 
         ["logout", User] ->
           Res = logout(User),
-          io:format("Res logout user manager~p~n",[Res]),
           case Res of
             logout_done ->
               gen_tcp:send(Sock, io_lib:format("LogoutDone~n", []));
@@ -62,11 +61,9 @@ userAuth(Sock) ->
           score_manager ! {getScores, self()},
           receive
             {scores, Scores} ->
-              io:format("Scores: ~p~n", [Scores]),
               gen_tcp:send(Sock, io_lib:format("BeginScores~n", [])),
               ScoresInfo = maps:new(),
               ScoresInfo2 = maps:put(scores,Scores, ScoresInfo),
-              io:format("Scores Info2: ~p~n", [ScoresInfo2]),
               sendScores(Sock, ScoresInfo2),
               gen_tcp:send(Sock, io_lib:format("EndScores~n", []));
 
@@ -125,12 +122,12 @@ userInGame(Sock, Username, Match)->
           userInGame(Sock,Username,Match);
 
         {tcp_closed, _} ->
-          io:format("~s has disconnected user_manager~n", [Username]),
+          io:format("~s has disconnected~n", [Username]),
           logout(Username),
           match_manager ! {leave, Username, self()};
 
         {tcp_error, _, _} ->
-          io:format("~s left due to error user_manager~n", [Username]),
+          io:format("~s left due to error~n", [Username]),
           logout(Username),
           match_manager ! {leave, Username, self()}
       end
@@ -237,10 +234,8 @@ sendCreatureInfo(Sock, [H|T], Idx) ->
 sendScores(Sock, MatchInfo) ->
   case maps:find(scores, MatchInfo) of
     {ok, Scores} ->
-      %io:format("Entrou no ok Scores do user_manager~n",[]),
       sendScore(Sock, Scores);
     error ->
-      %io:format("Entrou no error do user_manager~n",[]),
       nothingToSend
   end.
 

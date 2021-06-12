@@ -663,7 +663,7 @@ void showMatchScreen() {
       Score s = bestScores.get(i);
       fill(255);
       if (s.username.equals(e.player.getUsername()))
-        fill(255);
+        fill(0,0,255);
       textSize(24);
       textAlign(LEFT, TOP);
       text(s.username + ": " + s.score, 3, 3 + i*30);
