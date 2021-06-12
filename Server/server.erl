@@ -23,11 +23,6 @@ acceptor(LSock) ->
 roomMatch(ActivePlayers, WaitingQueue, MaxPlayers) ->
    receive
       {newPlayer, User, Pid} ->
-         login_manager ! {online , self()},
-         receive
-            {{online, User_list},login_manager} ->
-               io:format("~p~n",[User_list])
-         end,
          roomMatch(ActivePlayers,WaitingQueue,MaxPlayers);
 
       {login, User, Pid} ->
