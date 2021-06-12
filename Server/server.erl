@@ -28,13 +28,28 @@ roomMatch(ActivePlayers, WaitingQueue, MaxPlayers) ->
          roomMatch(ActivePlayers,WaitingQueue,MaxPlayers);
 
       {login, User, Pid} ->
-         WaitingQueue1 = WaitingQueue ++ [{Pid, User}],
+         PlayerCheck = {Pid, User},
+         Condition2 = lists:member(PlayerCheck, ActivePlayers),
+         if
+            Condition2 ->
+               WaitingQueue1 = WaitingQueue;
+            true ->
+               WaitingQueue1 = WaitingQueue ++ [{Pid, User}]
+         end,
+
          if
             length(ActivePlayers) < MaxPlayers ->
                io:format("User ~s wants to play. Waiting for opponent...~n", [User]),
                Player = lists:nth(1,WaitingQueue1),
                WaitingQueue2 = lists:delete(Player, WaitingQueue1),
-               ActivePlayers1 = lists:umerge(ActivePlayers,[Player]),
+               %ActivePlayers1 = lists:umerge(ActivePlayers,[Player]),
+               Condition = lists:member(Player, ActivePlayers),
+               if
+                  Condition ->
+                     ActivePlayers1 = ActivePlayers;
+                  true ->
+                     ActivePlayers1 = [Player | ActivePlayers]
+               end,
                if
                   length(ActivePlayers1) == MaxPlayers ->
                      io:format("Opponents found~n", []),
@@ -49,15 +64,30 @@ roomMatch(ActivePlayers, WaitingQueue, MaxPlayers) ->
 
       {continue, User, Pid} ->
          io:format("Entrou no continue no server~n",[]),
-         WaitingQueue1 = lists:umerge(WaitingQueue,[{Pid, User}]),
+         %WaitingQueue1 = lists:umerge(WaitingQueue,[{Pid, User}]),
+         Condition = lists:member({Pid, User}, WaitingQueue),
+         if
+            Condition ->
+               WaitingQueue1 = WaitingQueue;
+            true ->
+               WaitingQueue1 = [{Pid, User} | WaitingQueue]
+         end,
          ActivePlayers1 = lists:delete({Pid,User},ActivePlayers),
          io:format("WaitingQueue1 ~p~n", [WaitingQueue1]),
          io:format("ActivePlayers1 ~p~n", [ActivePlayers1]),
          if
             length(WaitingQueue1) > 0 ->
                Player = lists:nth(1,WaitingQueue1),
+               io:format("WaitingQueue1 antes do delete ~p~n", [WaitingQueue1]),
                WaitingQueue2 = lists:delete(Player, WaitingQueue1),
-               ActivePlayers2 = lists:umerge(ActivePlayers1,[Player]),
+               %ActivePlayers2 = lists:umerge(ActivePlayers1,[Player]),
+               Condition2 = lists:member(Player, ActivePlayers1),
+               if
+                  Condition2 ->
+                     ActivePlayers2 = ActivePlayers1;
+                  true ->
+                     ActivePlayers2 = [Player | ActivePlayers1]
+               end,
                io:format("WaitingQueue2 ~p~n", [WaitingQueue2]),
                io:format("ActivePlayers2 ~p~n", [ActivePlayers2]),
                if
