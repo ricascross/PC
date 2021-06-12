@@ -104,6 +104,9 @@ class Reader extends Thread {
               float r = Float.parseFloat(fields[5]);
               e.creatures.set(Integer.parseInt(fields[1]), new Creature(x, y, r, type));
             }
+            else if (fields[0].equals("S")) {
+              scores.add(new Score(fields[1], Float.parseFloat(fields[2])));
+            }
             info = this.b.readLine();
           }
           if (scores.size() != 0)

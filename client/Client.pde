@@ -83,6 +83,7 @@ void mouseClicked() {
           GameState e = state.get();
           e.bestScores = new ArrayList<Score>();
           while (!info.equals("EndScores")) {
+              System.out.println("Comecou a leitura de scores");
               String[] fields = info.split(",");
               e.bestScores.add(new Score(fields[1], Float.parseFloat(fields[2])));
               info = fromSocket.readLine();
@@ -577,7 +578,7 @@ void showBestScoresScreen() {
   textSize(30);
   for (int i = 0; i < bestScores.size(); i++) {
     Score s = bestScores.get(i);
-    fill(0);
+    fill(255);
     text((i+1) + "º: " + s.username + " - " + s.score, width/2, height/2 + i*50 - 60);
   }
   strokeWeight(0);
@@ -645,9 +646,7 @@ void showMatchScreen() {
   ArrayList<Player> enemies = e.enemies;
   ArrayList<Creature> creatures = e.creatures;
   ArrayList<Score> bestScores = e.bestScores;
-  
-  System.out.println(enemies.size() + 1);
-  
+    
   // Desenhar as entidades do jogo
   for (int i = 0; i < creatures.size(); i++)
     creatures.get(i).showCreature();
@@ -662,9 +661,9 @@ void showMatchScreen() {
     // Melhores pontuações
     for (int i = 0; i < bestScores.size(); i++) {
       Score s = bestScores.get(i);
-      fill(0);
+      fill(255);
       if (s.username.equals(e.player.getUsername()))
-        fill(0, 0, 255);
+        fill(255);
       textSize(24);
       textAlign(LEFT, TOP);
       text(s.username + ": " + s.score, 3, 3 + i*30);

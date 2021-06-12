@@ -60,13 +60,13 @@ userAuth(Sock) ->
 
         ["Scores"] ->
           score_manager ! {getScores, self()},
-
           receive
             {scores, Scores} ->
+              io:format("Scores: ~p~n", [Scores]),
               gen_tcp:send(Sock, io_lib:format("BeginScores~n", [])),
               ScoresInfo = maps:new(),
               ScoresInfo2 = maps:put(scores,Scores, ScoresInfo),
-              io:format("Scores Info: ~p~n", [ScoresInfo2]),
+              io:format("Scores Info2: ~p~n", [ScoresInfo2]),
               sendScores(Sock, ScoresInfo2),
               gen_tcp:send(Sock, io_lib:format("EndScores~n", []));
 
@@ -77,7 +77,9 @@ userAuth(Sock) ->
 
         _ ->
           self() ! gen_tcp:send(Sock, io_lib:format("InvalidCommand~n", []))
-      end
+      end;
+
+    _ -> userAuth(Sock)
   end.
 
 % Função que devolve uma partida nova
@@ -90,22 +92,12 @@ newGame(Sock, User) ->
 
     {tcp_closed, _} ->
       io:format("User ~s disconnected~n", [User]),
-      %logout(User),
-      login_manager ! {{logout, User},self()},
-      receive
-        _ ->
-          io:format("Logout TCP CLOSED")
-      end,
+      logout(User),
       match_manager ! {leaveWaitMatch, User, self()};
 
     {tcp_error, _, _} ->
       io:format("User ~s disconnected with error~n", [User]),
-      %logout(User),
-      login_manager ! {{logout, User},self()},
-      receive
-        _ ->
-          io:format("Logout TCP error")
-      end,
+      logout(User),
       match_manager ! {leaveWaitMatch, User, self()}
   end.
 
@@ -134,23 +126,12 @@ userInGame(Sock, Username, Match)->
 
         {tcp_closed, _} ->
           io:format("~s has disconnected user_manager~n", [Username]),
-          %logout(Username),
-          login_manager ! {{logout, Username},self()},
-          receive
-            _ ->
-              io:format("Logout TCP CLOSED")
-          end,
-
+          logout(Username),
           match_manager ! {leave, Username, self()};
 
         {tcp_error, _, _} ->
           io:format("~s left due to error user_manager~n", [Username]),
-          %logout(Username),
-          login_manager ! {{logout, _},self()},
-          receive
-            _ ->
-              io:format("Logout TCP EROR")
-          end,
+          logout(Username),
           match_manager ! {leave, Username, self()}
       end
   end.
@@ -174,12 +155,8 @@ matchOverUserResponse(Sock, Username) ->
           match_manager ! {continue , Username, self()},
           userInGame(Sock, Username, newGame(Sock, Username));
         ["Quit"] ->
-          %logout(Username),
+          logout(Username),
           login_manager ! {{logout, Username},self()},
-          receive
-            _ ->
-              io:format("Logout GAME")
-          end,
           match_manager ! {leaveWaitMatch, Username, self()},
           userAuth(Sock);
         _ ->
@@ -190,15 +167,11 @@ matchOverUserResponse(Sock, Username) ->
     {tcp_close, _} ->
       logout(Username),
       match_manager ! {leaveWaitMatch, Username, self()},
-      login_manager ! {{logout, Username},self()},
-      receive
-        _ ->
-          io:format("Logout TCP CLOSED")
-      end;
+      login_manager ! {{logout, Username},self()};
 
     {tcp_error, _, _} ->
       logout(Username),
-      match_manager ! {leaveWaitMatch, Username, self()},
+      match_manager ! {leaveWaitMatch, Username, self()}
 
   end.
 
@@ -264,8 +237,10 @@ sendCreatureInfo(Sock, [H|T], Idx) ->
 sendScores(Sock, MatchInfo) ->
   case maps:find(scores, MatchInfo) of
     {ok, Scores} ->
+      %io:format("Entrou no ok Scores do user_manager~n",[]),
       sendScore(Sock, Scores);
     error ->
+      %io:format("Entrou no error do user_manager~n",[]),
       nothingToSend
   end.
 

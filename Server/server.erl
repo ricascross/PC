@@ -23,8 +23,11 @@ acceptor(LSock) ->
 roomMatch(ActivePlayers, WaitingQueue, MaxPlayers) ->
    receive
       {newPlayer, User, Pid} ->
-         io:format("WaitingQueue ~p~n", [WaitingQueue]),
-         io:format("ActivePlayers ~p~n", [ActivePlayers]),
+         login_manager ! {online , self()},
+         receive
+            {{online, User_list},login_manager} ->
+               io:format("~p~n",[User_list])
+         end,
          roomMatch(ActivePlayers,WaitingQueue,MaxPlayers);
 
       {login, User, Pid} ->
@@ -42,7 +45,6 @@ roomMatch(ActivePlayers, WaitingQueue, MaxPlayers) ->
                io:format("User ~s wants to play. Waiting for opponent...~n", [User]),
                Player = lists:nth(1,WaitingQueue1),
                WaitingQueue2 = lists:delete(Player, WaitingQueue1),
-               %ActivePlayers1 = lists:umerge(ActivePlayers,[Player]),
                Condition = lists:member(Player, ActivePlayers),
                if
                   Condition ->
@@ -63,8 +65,6 @@ roomMatch(ActivePlayers, WaitingQueue, MaxPlayers) ->
          end;
 
       {continue, User, Pid} ->
-         io:format("Entrou no continue no server~n",[]),
-         %WaitingQueue1 = lists:umerge(WaitingQueue,[{Pid, User}]),
          Condition = lists:member({Pid, User}, WaitingQueue),
          if
             Condition ->
@@ -73,14 +73,10 @@ roomMatch(ActivePlayers, WaitingQueue, MaxPlayers) ->
                WaitingQueue1 = [{Pid, User} | WaitingQueue]
          end,
          ActivePlayers1 = lists:delete({Pid,User},ActivePlayers),
-         io:format("WaitingQueue1 ~p~n", [WaitingQueue1]),
-         io:format("ActivePlayers1 ~p~n", [ActivePlayers1]),
          if
             length(WaitingQueue1) > 0 ->
                Player = lists:nth(1,WaitingQueue1),
-               io:format("WaitingQueue1 antes do delete ~p~n", [WaitingQueue1]),
                WaitingQueue2 = lists:delete(Player, WaitingQueue1),
-               %ActivePlayers2 = lists:umerge(ActivePlayers1,[Player]),
                Condition2 = lists:member(Player, ActivePlayers1),
                if
                   Condition2 ->
@@ -88,8 +84,7 @@ roomMatch(ActivePlayers, WaitingQueue, MaxPlayers) ->
                   true ->
                      ActivePlayers2 = [Player | ActivePlayers1]
                end,
-               io:format("WaitingQueue2 ~p~n", [WaitingQueue2]),
-               io:format("ActivePlayers2 ~p~n", [ActivePlayers2]),
+
                if
                   length(ActivePlayers2) == MaxPlayers ->
                      io:format("Opponents found~n", []),
@@ -307,7 +302,7 @@ updatePlayers(Players, [{Pid, Change}|T], DeadPlayers, Res) ->
    %io:format("Username: ~p~n",[Username]),
    %io:format("NewScore: ~p~n",[NewScore]),
    %Teste = score_manager ! {newScore, {Username, NewScore}},
-   score_manager ! {newScore, {Username, NewScore}, Pid},
+   score_manager ! {newScore, {Username, NewScore}},
    %io:format("NewScore: ~p~n",[Teste]),
    NewPlayer2 = maps:put(score, NewScore, NewPlayer1),
    %io:format("NewPlayer2: ~p~n", [NewPlayer2]),
@@ -439,7 +434,6 @@ match(PressedKeys, PlayersPids, MatchSender) ->
 
       {leave, User, Pid} ->
          MatchSender ! {exit, User, Pid}
-         %match_manager ! {matchOver, self()}
    end.
 
 % Função que atualiza a informação da partida e a envia aos clientes
@@ -461,15 +455,14 @@ matchSender(Match, PlayersPids, PidMatch, ScoresUpdated) ->
       {exit, User, Pid} ->
          {ok, Players} = maps:find(players, Match),
          Leaderboard = leaderboard(maps:to_list(Players), []),
-         io:format("Leaderboard: ~p~n", [Leaderboard]),
          [Player ! {matchOver, Leaderboard, PidMatch} || Player <- PlayersPids],
-         %score_manager ! {getScores, self()},
-         %[score_manager ! {newScore, {Username,Score}} || {Username, Score} <- Leaderboard],
+         score_manager ! {getScores, self()},
          match_manager ! {leaveWaitMatch, User, Pid},
          done
       after
-         30 -> Match1 = sendSimulation(Match, PlayersPids, PidMatch, ScoresUpdated),
-         matchSender(Match1, PlayersPids, PidMatch, false)
+         30 ->
+            Match1 = sendSimulation(Match, PlayersPids, PidMatch, ScoresUpdated),
+            matchSender(Match1, PlayersPids, PidMatch, false)
    end.
 
 % Função que devolve a tabela de pontuações de uma partida
@@ -515,7 +508,6 @@ keyPressedEvent([{Pid,PlayerData}|Players], Res, UpdatedPlayers) ->
    {ok, X} = maps:find(x, PlayerData),
    {ok, Y} = maps:find(y, PlayerData),
    Acc = 1/(Radius * Radius * math:pi()) + 3,
-   %io:format("PressedKeys ~p~n", [PressedKeys]),
    TrueKeys = maps:filter(fun(_, V) ->
       case V of
          true ->
@@ -557,6 +549,7 @@ sendSimulation(Match, PlayersPids, PidMatch, ScoresUpdated) ->
    % Atualizar as melhores pontuações, se tiverem sido atualizadas pelo gestor de pontuações
    case ScoresUpdated of
       true ->
+         io:format("Entrou no if caso as melhores pontuacoes atualizaram~n",[]),
          {ok, Scores} = maps:find(scores, Match),
          UpdatedInfo3 = maps:put(scores, Scores, UpdatedInfo2),
          % Enviar as informações atualizadas aos jogadores, se estas exitirem
