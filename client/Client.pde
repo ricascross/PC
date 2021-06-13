@@ -659,14 +659,27 @@ void showMatchScreen() {
 
   if(showScores.get()){
     // Melhores pontuações
+    
     for (int i = 0; i < bestScores.size(); i++) {
       Score s = bestScores.get(i);
       fill(255);
-      if (s.username.equals(e.player.getUsername()))
+      if (s.username.equals(e.player.getUsername())){
         fill(0,0,255);
-      textSize(24);
-      textAlign(LEFT, TOP);
-      text(s.username + ": " + s.score, 3, 3 + i*30);
+        textSize(24);
+        textAlign(LEFT, TOP);
+        text(s.username + ": " + e.player.getScore(), 3, 3 + i*30);
+      } else {
+        textSize(24);
+        textAlign(LEFT, TOP);
+        if (s.username.equals(e.enemies.get(0).getUsername())) {
+          text(s.username + ": " + e.enemies.get(0).getScore(), 3, 3 + i*30);
+        }else if (s.username.equals(e.enemies.get(1).getUsername())) {
+          System.out.println("Enemie 1: " + e.enemies.get(1).getUsername());
+          text(s.username + ": " + e.enemies.get(1).getScore(), 3, 3 + i*30);
+        }
+        
+      }
+      
     }
   }
 }
