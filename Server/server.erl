@@ -60,36 +60,36 @@ roomMatch(ActivePlayers, WaitingQueue, MaxPlayers) ->
          end;
 
       {continue, User, Pid} ->
-         Condition = lists:member({Pid, User}, WaitingQueue),
+         %Condition = lists:member({Pid, User}, WaitingQueue),
+         %if
+         %   Condition ->
+         %      WaitingQueue1 = WaitingQueue;
+         %   true ->
+         %      WaitingQueue1 = [{Pid, User} | WaitingQueue]
+         %end,
+         %ActivePlayers1 = lists:delete({Pid,User},ActivePlayers),
          if
-            Condition ->
-               WaitingQueue1 = WaitingQueue;
-            true ->
-               WaitingQueue1 = [{Pid, User} | WaitingQueue]
-         end,
-         ActivePlayers1 = lists:delete({Pid,User},ActivePlayers),
-         if
-            length(WaitingQueue1) > 0 ->
-               Player = lists:nth(1,WaitingQueue1),
-               WaitingQueue2 = lists:delete(Player, WaitingQueue1),
-               Condition2 = lists:member(Player, ActivePlayers1),
-               if
-                  Condition2 ->
-                     ActivePlayers2 = ActivePlayers1;
-                  true ->
-                     ActivePlayers2 = [Player | ActivePlayers1]
-               end,
+            length(WaitingQueue) > 0 ->
+               Player = lists:nth(1,WaitingQueue),
+               WaitingQueue2 = lists:delete(Player, WaitingQueue),
+               %Condition2 = lists:member(Player, ActivePlayers),
+               %if
+               %   Condition2 ->
+               %      ActivePlayers2 = ActivePlayers0;
+               %   true ->
+               %      ActivePlayers2 = [Player | ActivePlayers1]
+               %end,
 
                if
-                  length(ActivePlayers2) == MaxPlayers ->
+                  length(ActivePlayers) == MaxPlayers ->
                      io:format("Opponents found~n", []),
-                     matchInitialize(ActivePlayers2, maps:new(), [], maps:new()),
-                     roomMatch(ActivePlayers2, WaitingQueue2, MaxPlayers);
+                     matchInitialize(ActivePlayers, maps:new(), [], maps:new()),
+                     roomMatch(ActivePlayers, WaitingQueue2, MaxPlayers);
                   true ->
-                     roomMatch(ActivePlayers2, WaitingQueue2, MaxPlayers)
+                     roomMatch(ActivePlayers, WaitingQueue2, MaxPlayers)
                end;
             true ->
-               roomMatch(ActivePlayers1, WaitingQueue1, MaxPlayers)
+               roomMatch(ActivePlayers, WaitingQueue, MaxPlayers)
          end;
 
       {leaveWaitMatch, User, Pid} ->
@@ -346,7 +346,6 @@ matchInitialize([], Players, Pids, PressedKeys) ->
          {scores, Scores} ->
             Scores
       end,
-      io:format("Scores entrou no matchInitialize~n"),
       Creatures = createCreature(poison, 50, maps:to_list(Players), []) ++ createCreature(food, 50, maps:to_list(Players), []),
       Info = maps:new(),
       Info1 = maps:put(players,Players, Info),

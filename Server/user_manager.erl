@@ -153,7 +153,7 @@ matchOverUserResponse(Sock, Username) ->
           userInGame(Sock, Username, newGame(Sock, Username));
         ["Quit"] ->
           logout(Username),
-          login_manager ! {{logout, Username},self()},
+          %login_manager ! {{logout, Username},self()},
           match_manager ! {leaveWaitMatch, Username, self()},
           userAuth(Sock);
         _ ->
@@ -163,8 +163,8 @@ matchOverUserResponse(Sock, Username) ->
 
     {tcp_close, _} ->
       logout(Username),
-      match_manager ! {leaveWaitMatch, Username, self()},
-      login_manager ! {{logout, Username},self()};
+      match_manager ! {leaveWaitMatch, Username, self()};
+      %login_manager ! {{logout, Username},self()};
 
     {tcp_error, _, _} ->
       logout(Username),
