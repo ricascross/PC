@@ -38,58 +38,65 @@ roomMatch(ActivePlayers, WaitingQueue, MaxPlayers) ->
          if
             length(ActivePlayers) < MaxPlayers ->
                io:format("User ~s wants to play. Waiting for opponent...~n", [User]),
-               Player = lists:nth(1,WaitingQueue1),
-               WaitingQueue2 = lists:delete(Player, WaitingQueue1),
-               Condition = lists:member(Player, ActivePlayers),
                if
-                  Condition ->
-                     ActivePlayers1 = ActivePlayers;
+                  length(WaitingQueue1) < 1 ->
+                     roomMatch(ActivePlayers, WaitingQueue1, MaxPlayers);
                   true ->
-                     ActivePlayers1 = [Player | ActivePlayers]
-               end,
-               if
-                  length(ActivePlayers1) == MaxPlayers ->
-                     io:format("Opponents found~n", []),
-                     matchInitialize(ActivePlayers1, maps:new(), [], maps:new()),
-                     roomMatch(ActivePlayers1, WaitingQueue2, MaxPlayers);
-                  true ->
-                     roomMatch(ActivePlayers1, WaitingQueue2, MaxPlayers)
+                     Player = lists:nth(1,WaitingQueue1),
+                     WaitingQueue2 = lists:delete(Player, WaitingQueue1),
+                     Condition = lists:member(Player, ActivePlayers),
+                     if
+                        Condition ->
+                           ActivePlayers1 = ActivePlayers;
+                        true ->
+                           ActivePlayers1 = [Player | ActivePlayers]
+                     end,
+                     if
+                        length(ActivePlayers1) == MaxPlayers ->
+                           io:format("Opponents found~n", []),
+                           matchInitialize(ActivePlayers1, maps:new(), [], maps:new(), []),
+                           roomMatch(ActivePlayers1, WaitingQueue2, MaxPlayers);
+                        true ->
+                           roomMatch(ActivePlayers1, WaitingQueue2, MaxPlayers)
+                     end
+
                end;
+
             true ->
                roomMatch(ActivePlayers, WaitingQueue1, MaxPlayers)
          end;
 
       {continue, User, Pid} ->
-         %Condition = lists:member({Pid, User}, WaitingQueue),
-         %if
-         %   Condition ->
-         %      WaitingQueue1 = WaitingQueue;
-         %   true ->
-         %      WaitingQueue1 = [{Pid, User} | WaitingQueue]
-         %end,
-         %ActivePlayers1 = lists:delete({Pid,User},ActivePlayers),
+         Condition = lists:member({Pid, User}, WaitingQueue),
          if
-            length(WaitingQueue) > 0 ->
-               Player = lists:nth(1,WaitingQueue),
-               WaitingQueue2 = lists:delete(Player, WaitingQueue),
-               %Condition2 = lists:member(Player, ActivePlayers),
-               %if
-               %   Condition2 ->
-               %      ActivePlayers2 = ActivePlayers0;
-               %   true ->
-               %      ActivePlayers2 = [Player | ActivePlayers1]
-               %end,
+            Condition ->
+               WaitingQueue1 = WaitingQueue;
+            true ->
+               WaitingQueue1 = [{Pid, User} | WaitingQueue]
+         end,
+         ActivePlayers1 = lists:delete({Pid,User},ActivePlayers),
+         if
+            length(WaitingQueue1) > 0 ->
+               Player = lists:nth(1,WaitingQueue1),
+               WaitingQueue2 = lists:delete(Player, WaitingQueue1),
+               Condition2 = lists:member(Player, ActivePlayers),
+               if
+                  Condition2 ->
+                     ActivePlayers2 = ActivePlayers1;
+                  true ->
+                     ActivePlayers2 = [Player | ActivePlayers1]
+               end,
 
                if
-                  length(ActivePlayers) == MaxPlayers ->
+                  length(ActivePlayers2) == MaxPlayers ->
                      io:format("Opponents found~n", []),
-                     matchInitialize(ActivePlayers, maps:new(), [], maps:new()),
-                     roomMatch(ActivePlayers, WaitingQueue2, MaxPlayers);
+                     matchInitialize(ActivePlayers2, maps:new(), [], maps:new(),[]),
+                     roomMatch(ActivePlayers2, WaitingQueue2, MaxPlayers);
                   true ->
-                     roomMatch(ActivePlayers, WaitingQueue2, MaxPlayers)
+                     roomMatch(ActivePlayers2, WaitingQueue2, MaxPlayers)
                end;
             true ->
-               roomMatch(ActivePlayers, WaitingQueue, MaxPlayers)
+               roomMatch(ActivePlayers, WaitingQueue1, MaxPlayers)
          end;
 
       {leaveWaitMatch, User, Pid} ->
@@ -337,15 +344,11 @@ interactions(MatchInfo) ->
 
 
 % Função que inicializa uma partida
-matchInitialize([], Players, Pids, PressedKeys) ->
+matchInitialize([], Players, Pids, PressedKeys, Scores) ->
    PidMatch = self(),
 
    MatchSender = spawn(fun() ->
-      score_manager ! {getScores, self()},
-      receive
-         {scores, Scores} ->
-            Scores
-      end,
+
       Creatures = createCreature(poison, 50, maps:to_list(Players), []) ++ createCreature(food, 50, maps:to_list(Players), []),
       Info = maps:new(),
       Info1 = maps:put(players,Players, Info),
@@ -355,16 +358,18 @@ matchInitialize([], Players, Pids, PressedKeys) ->
       matchSender(Match, Pids, PidMatch, false)
                        end),
    match(PressedKeys, Pids, MatchSender);
-matchInitialize([{Pid, Username}|T], Players, Pids, PressedKeys) ->
+matchInitialize([{Pid, Username}|T], Players, Pids, PressedKeys, Scores) ->
    Keys = maps:new(),
    Keys1 = maps:put(up, false ,Keys),
    Keys2 = maps:put(down, false ,Keys1),
    Keys3 = maps:put(left, false ,Keys2),
    PlayerPressedKeys = maps:put(right, false ,Keys3),
    PlayerData = createPlayer(Username, maps:to_list(Players), PlayerPressedKeys, 0),
+   ScoresInfo = {maps:get(username, PlayerData),maps:get(score, PlayerData)},
+   Scores2 = [ScoresInfo | Scores],
    NewPlayers = maps:put(Pid, PlayerData, Players),
    NewPressedKeys = maps:put(Pid, PlayerPressedKeys, PressedKeys),
-   matchInitialize(T, NewPlayers, [Pid | Pids], NewPressedKeys).
+   matchInitialize(T, NewPlayers, [Pid | Pids], NewPressedKeys, Scores2).
 
 
 % Função que gere uma partida entre vários utilizadores
