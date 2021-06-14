@@ -2,12 +2,16 @@
 -export([scoreBoard/2]).
 
 %Função que gere as melhores pontuações
+% Pid do match
 scoreBoard(Scores, Pid) ->
   receive
+    % Pid1 Pid do jogador
+    %envia por mensagem os scores para o jogador
     {getScores, Pid1} ->
       Pid1 ! {scores, Scores},
       scoreBoard(Scores, Pid);
 
+    % mensagem para adicionar um novo score
     {newScore, {User, Score}} ->
       case lists:filter(fun({Username, _}) -> Username == User end, Scores) of
 

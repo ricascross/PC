@@ -6,20 +6,25 @@
 
 start() -> server(4321).
 
+% inicia o server criando processos necessários para o funcionamento do servidor
 server(Port)->
-   register(match_manager, spawn(fun() -> roomMatch([], [], 3) end)),
+   register(match_manager, spawn(fun() -> roomMatch([], [], 3) end)), % cria um processo
    register(login_manager, start_login()),
    register(score_manager, spawn(fun() -> scoreBoard([], self()) end)),
    {ok, LSock} = gen_tcp:listen(Port, [binary, {packet, line}, {reuseaddr, true}]),
    io:format("Servidor pronto.~n", []),
    acceptor(LSock).
 
+
+% aceita a ligação de um cliente quando este abre a aplicação
 acceptor(LSock) ->
    {ok, Sock} = gen_tcp:accept(LSock),
    spawn(fun() -> acceptor(LSock) end),
    io:format("Alguem entrou.~n", []),
    userAuth(Sock).
 
+
+% faz a gestão dos jogadores ativos e dos jogadores que estão à espera para jogar
 roomMatch(ActivePlayers, WaitingQueue, MaxPlayers) ->
    receive
       {newPlayer, User, Pid} ->
@@ -54,6 +59,8 @@ roomMatch(ActivePlayers, WaitingQueue, MaxPlayers) ->
                      if
                         length(ActivePlayers1) == MaxPlayers ->
                            io:format("Opponents found~n", []),
+
+                           % tendo os jogadores necessários para uma partida, chama a função matchinitialize
                            matchInitialize(ActivePlayers1, maps:new(), [], maps:new(), []),
                            roomMatch(ActivePlayers1, WaitingQueue2, MaxPlayers);
                         true ->
@@ -66,6 +73,7 @@ roomMatch(ActivePlayers, WaitingQueue, MaxPlayers) ->
                roomMatch(ActivePlayers, WaitingQueue1, MaxPlayers)
          end;
 
+      % mensagem para quando uma partida termina e um jogador que estava ativo deseja continuar a jogar
       {continue, User, Pid} ->
          Condition = lists:member({Pid, User}, WaitingQueue),
          if
@@ -90,6 +98,7 @@ roomMatch(ActivePlayers, WaitingQueue, MaxPlayers) ->
                if
                   length(ActivePlayers2) == MaxPlayers ->
                      io:format("Opponents found~n", []),
+                     % tendo os jogadores necessários para uma partida, chama a função matchinitialize
                      matchInitialize(ActivePlayers2, maps:new(), [], maps:new(),[]),
                      roomMatch(ActivePlayers2, WaitingQueue2, MaxPlayers);
                   true ->
@@ -99,6 +108,7 @@ roomMatch(ActivePlayers, WaitingQueue, MaxPlayers) ->
                roomMatch(ActivePlayers, WaitingQueue1, MaxPlayers)
          end;
 
+      % quando um jogador sai permanentemente
       {leaveWaitMatch, User, Pid} ->
          io:format("User ~s left server~n", [User]),
          roomMatch(ActivePlayers -- [{Pid, User}], WaitingQueue, MaxPlayers)
@@ -119,7 +129,7 @@ checkPosition(X, Y, Radius, [{_,Player} | Players]) ->
          checkPosition(X, Y, Radius, Players)
    end.
 
-% Função que cria os objetos iniciais
+% Função que cria os criaturas
 createCreature(_, 0, _, Res) ->
    Res;
 createCreature(Type, N, Players, Res) ->
@@ -167,6 +177,7 @@ createPlayer(Username, Players, PressedKeys, BestScore) ->
          Player8
    end.
 
+% função que trata quando uma criatura é comida
 eatingEventCreature(Player, Creature) ->
    {ok, XP} = maps:find(x, Player),
    {ok, YP} = maps:find(y, Player),
@@ -202,7 +213,7 @@ eatingEventCreature(Player, Creature) ->
    end.
 
 
-% Função que devolve uma lista dos índices dos objetos comidos e uma lista sem eles
+% Função que devolve uma lista dos índices das criaturas comidos e uma lista sem eles
 creaturesEaten(Player, [], _, {IdxFood, IdxPoison, RadiusChange, NewCreatures}) ->
    {IdxFood, IdxPoison, RadiusChange, NewCreatures, Player};
 creaturesEaten(Player, [empty | Creatures], Idx, {IdxFood, IdxPoison, RadiusChange, NewCreatures}) ->
@@ -221,7 +232,7 @@ creaturesEaten(Player, [Creature | Creatures], Idx, {IdxFood, IdxPoison, RadiusC
          creaturesEaten(Player, Creatures, Idx+1, {IdxFood, IdxPoison, RadiusChange, NewCreatures})
    end.
 
-% Função que verifica que objetos foram comidos e devolve o índice deles
+% Função que verifica que criaturas foram comidos e devolve o índice deles(útil para respawn automático de criaturas)
 verifyCreaturesEaten([], _, Res) ->
    Res;
 verifyCreaturesEaten([{Pid, Player}|T], Creatures, {Food, Poison, PlayersRadiusChange, UpdatedPlayers}) ->
@@ -278,7 +289,7 @@ verifyPlayersEaten([{Pid, Player}|T], Players, {DeadPlayers, PlayersRadiusChange
    verifyPlayersEaten(T, NewPlayers, {DeadPlayers ++ DeadPlayersPids, [{Pid, RadiusChange}|PlayersRadiusChange]}).
 
 
-% Função que atualiza o tamanho e a pontuação dos jogadores ou coloca-os de novo em jogo (caso tenham sido capturados)
+% Função que atualiza o tamanho e a pontuação dos jogadores ou coloca-os de novo em jogo (caso tenham sido comidos)
 updatePlayers(_, [], [], Res) ->
    Res;
 updatePlayers(Players, [], [Dead|T], Res) ->
@@ -313,14 +324,14 @@ updatePlayers(Players, [{Pid, Change}|T], DeadPlayers, Res) ->
    updatePlayers(Players, T, DeadPlayers, Res1).
 
 
-% Função que substitui os objetos capturados por objetos novos
+% Função que substitui as criaturas comidas por criaturas novas
 replaceCreatures(Res, [], []) ->
    Res;
 replaceCreatures(Res, [Creature|T], [Idx|Indices]) ->
    Res1 = lists:sublist(Res, Idx-1) ++ [Creature] ++ lists:nthtail(Idx, Res),
    replaceCreatures(Res1, T, Indices).
 
-% Função que calcula as interações entre os jogadores e os objetos/jogadores, alterando o tamanho dos jogadores e devolvendo o número de objetos comidos de cada tipo
+% Função que calcula as interações entre os jogadores e as criaturas/jogadores, alterando o tamanho dos jogadores e devolvendo o número das criaturas comidas de cada tipo
 interactions(MatchInfo) ->
    {ok, Players} = maps:find(players, MatchInfo),
    {ok, Creatures} = maps:find(creatures, MatchInfo),
@@ -343,7 +354,7 @@ interactions(MatchInfo) ->
    {MatchInfo2, FoodIndices ++ PoisonIndices, UpdatedPlayersPids1}.
 
 
-% Função que inicializa uma partida
+% Função que gera toda a informação(criaturas, players, scores) inicial de uma partida
 matchInitialize([], Players, Pids, PressedKeys, Scores) ->
    PidMatch = self(),
 
@@ -372,7 +383,7 @@ matchInitialize([{Pid, Username}|T], Players, Pids, PressedKeys, Scores) ->
    matchInitialize(T, NewPlayers, [Pid | Pids], NewPressedKeys, Scores2).
 
 
-% Função que gere uma partida entre vários utilizadores
+% Função que gere as ações de premir e libertar teclas, bem como a saída de um jogador
 match(PressedKeys, PlayersPids, MatchSender) ->
    receive
       {(keyChanged), Key, Change, Pid} ->
@@ -568,7 +579,7 @@ sendSimulation(Match, PlayersPids, PidMatch, ScoresUpdated) ->
    end,
    Match3.
 
-% Função que guarda a informação dos jogadores e dos objetos que foi alterada
+% Função que guarda a informação dos jogadores e das criaturas que foi alterada
 updatePlayersCreaturesInfo(_, Res, [], [], TmpCreatures, TmpPlayers) ->
    NumCreatures = length(TmpCreatures),
    if
